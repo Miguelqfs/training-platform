@@ -15,7 +15,7 @@ A disciplina pede cadastro e listagem de usuários em uma coleção na RAM, alé
 - Manter os esquemas HTTP em `app/schemas.py` e as rotas em `app/routers/`. Colocar a entidade e o serviço de usuários no pacote `app/users/`. O serviço mantém a coleção em RAM nesta sprint.
 - Garantir unicidade de `username` e e-mail sem diferenciar maiúsculas de minúsculas. A coleção pertence a uma instância da aplicação e dura somente enquanto seu processo estiver ativo.
 - Não aplicar autenticação ou autorização nesta sprint. O papel `admin` não oferece proteção enquanto esses mecanismos não forem implementados.
-- Incluir `httpx` no arquivo único de dependências para executar os testes da API com `TestClient` do FastAPI. Os testes usam `unittest` da biblioteca padrão.
+- Incluir `httpx` e `pytest` no arquivo único de dependências para executar os testes da API com `TestClient` do FastAPI.
 
 ## Consequências
 

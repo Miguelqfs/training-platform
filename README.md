@@ -24,7 +24,7 @@ O campo `role` é opcional e assume `student`. Os usuários são perdidos quando
 ## Testar
 
 ```bash
-python -m unittest discover -s tests
+python -m pytest
 ```
 
 As regras da sprint estão em [docs/specs/usuarios.md](docs/specs/usuarios.md), os diagramas em [docs/diagramas/](docs/diagramas/), a estrutura planejada em [docs/arquitetura.md](docs/arquitetura.md) e a decisão da primeira sprint em [docs/adr/0001-usuarios-em-memoria.md](docs/adr/0001-usuarios-em-memoria.md).

@@ -2,3 +2,4 @@ fastapi>=0.100
 uvicorn[standard]
 pydantic[email]>=2
 httpx
+pytest
