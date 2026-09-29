@@ -1,0 +1,27 @@
+name: ci 
+
+on: 
+  pull_request:
+    branches: [main, develop] # ci worflow for both branches
+
+jobs:
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      # - name: Run tests
+        # run: pytest - uncomment it when we have a test
