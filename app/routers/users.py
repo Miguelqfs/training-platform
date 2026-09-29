@@ -1,21 +1,29 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.schemas import User, UserCreate
+from app.users.domain import DuplicateUserError
+from app.users.service import UserService
 
 router = APIRouter(prefix="/users", tags=["users"])
-users: list[User] = []
+
+
+def get_user_service(request: Request) -> UserService:
+    return request.app.state.user_service
 
 
 @router.post("/", response_model=User, status_code=status.HTTP_201_CREATED)
-def create_user(payload: UserCreate) -> User:
-    if any(user.username == payload.username or user.email == payload.email for user in users):
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Usuário ou e-mail já cadastrado")
+def create_user(payload: UserCreate, service: UserService = Depends(get_user_service)) -> User:
+    try:
+        user = service.add_user(payload.username, str(payload.email), payload.role)
+    except DuplicateUserError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
 
-    user = User(id=len(users) + 1, **payload.model_dump())
-    users.append(user)
-    return user
+    return User(id=user.id, username=user.username, email=user.email, role=user.role)
 
 
 @router.get("/", response_model=list[User])
-def list_users() -> list[User]:
-    return users
+def list_users(service: UserService = Depends(get_user_service)) -> list[User]:
+    return [
+        User(id=user.id, username=user.username, email=user.email, role=user.role)
+        for user in service.list_users()
+    ]

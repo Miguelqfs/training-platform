@@ -1,0 +1,20 @@
+@startuml
+left to right direction
+actor Aluno
+actor Administrador
+
+rectangle "Gerenciamento de usuários" {
+  usecase "Cadastrar usuário" as cadastrar
+  usecase "Listar todos os usuários" as listar
+}
+
+Aluno --> cadastrar
+Administrador --> cadastrar
+Administrador --> listar
+
+note right of listar
+  Autenticação e autorização são futuras.
+  A Sprint 1 implementa a operação sem
+  verificar o papel de quem a solicita.
+end note
+@enduml
