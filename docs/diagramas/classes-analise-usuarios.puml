@@ -1,0 +1,32 @@
+@startuml
+class "API de usuários" as API <<boundary>> {
+  +cadastrar(dados)
+  +listar()
+}
+
+class "Gerenciador de usuários" as Gerenciador <<control>> {
+  +adicionar(dados): Usuário
+  +listarTodos(): Usuário[]
+}
+
+class "Usuário" as Usuario <<entity>> {
+  +id: inteiro
+  +username: texto
+  +email: texto
+  +tipo: TipoUsuario
+}
+
+enum TipoUsuario {
+  ALUNO
+  ADMINISTRADOR
+}
+
+API --> Gerenciador
+Gerenciador --> "0..*" Usuario
+Usuario --> TipoUsuario
+
+note bottom of Gerenciador
+  A coleção em RAM é um detalhe do projeto
+  técnico, não uma entidade de análise.
+end note
+@enduml
