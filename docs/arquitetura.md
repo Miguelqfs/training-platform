@@ -2,57 +2,52 @@
 
 ## Estado atual
 
-Na Sprint 1, apenas a API de usuários é executável. O código fica em `app/`: `routers/` e `schemas.py` formam a fronteira HTTP; `users/service.py` controla o cadastro, a listagem e a coleção em RAM; `users/domain.py` define a entidade. O projeto usa Python 3.12, FastAPI e `pip`. Ainda não há aplicativo mobile, banco de dados ou integração com a OpenAI.
+A Sprint 1 entrega uma API Rust com Axum para cadastrar e listar alunos e administradores em memória.
+Cada instância da aplicação possui seu próprio serviço de usuários. Ainda não há
+aplicativo mobile, banco de dados ou integração com o treinador de IA.
 
-## Stack planejada
+```text
+src/
+├── main.rs    # servidor, endereço e encerramento com Ctrl+C ou SIGTERM
+├── lib.rs     # roteamento, extração de JSON e respostas HTTP
+└── users.rs   # modelos, validação, unicidade e coleção em memória
+tests/
+└── users.rs   # testes HTTP com estado isolado, sem abrir uma porta
+```
 
-| Parte | Tecnologias | Papel |
+`UserService` concentra as regras de cadastro e listagem. Os handlers compartilham
+um `Arc<UserService>`; o serviço usa `RwLock<Vec<User>>` para permitir leituras
+concorrentes e proteger a verificação de unicidade junto com a inserção. Os erros
+do serviço são convertidos em respostas HTTP somente na fronteira da API.
+
+Os papéis são `student` (padrão) e `admin`, representados por um enum Rust.
+O papel classifica o usuário e ainda não controla acesso. Nomes preservam a caixa, e-mails são armazenados em
+minúsculas e ambos têm espaços externos removidos. Duplicatas são comparadas com
+case folding Unicode. Os dados são perdidos quando o processo termina.
+
+## Direção futura
+
+| Parte | Tecnologia ou decisão | Papel |
 | --- | --- | --- |
-| API | Python 3.12 e FastAPI | Expor operações de usuários e treinos, validar acesso e coordenar o agente. |
-| Persistência | PostgreSQL e, como ORM proposta, SQLAlchemy 2 | Guardar usuários, treinos, exercícios e histórico quando a coleção em RAM for substituída. |
-| Mobile | React Native com Expo | Interface do aluno para solicitar, visualizar e acompanhar treinos. Expo Go será usado nos primeiros testes. |
-| Treinador IA | API da OpenAI, chamada pela API do projeto | Consultar dados permitidos e solicitar criação ou edição de treinos por ferramentas do servidor. |
+| API | Rust e Axum | Operações de usuários e treinos e coordenação do treinador. |
+| Persistência | PostgreSQL; driver e acesso aos dados ainda em aberto | Usuários, treinos, exercícios e histórico. |
+| Mobile | React Native com Expo | Interface do aluno para solicitar e acompanhar treinos. |
+| Treinador IA | Integração futura pelo servidor | Criação e edição de treinos por ferramentas controladas pela API. |
 
-“Alguma ORM” foi interpretado como uma escolha ainda em aberto. [SQLAlchemy](https://docs.sqlalchemy.org/en/20/orm/) é a proposta inicial; a decisão final e as migrações de banco devem ser registradas quando a persistência for implementada. [Expo Go](https://docs.expo.dev/develop/development-builds/faq/) é adequado para prototipar, mas um *development build* será necessário se o app usar bibliotecas nativas que não vêm nele.
-
-## Comunicação entre as partes
+O mobile conversará com a API por HTTPS. O servidor controlará o acesso ao banco,
+validará os argumentos das ferramentas do treinador e manterá as credenciais fora
+do aplicativo mobile. O treinador será um agente, sem um papel de usuário próprio.
 
 ```mermaid
 flowchart LR
-    Aluno[Aluno no app mobile] -->|HTTPS| API[API FastAPI]
-    API -->|leitura e escrita| Banco[(PostgreSQL)]
-    API -->|requisições do treinador IA| OpenAI[API da OpenAI]
-    OpenAI -->|pedidos de ferramenta na resposta| API
+    Aluno[Aluno no mobile] -->|HTTPS| API[API Rust]
+    API --> Banco[(PostgreSQL futuro)]
+    API --> Treinador[Treinador IA futuro]
+    Treinador -->|pedidos de ferramenta| API
 ```
 
-O app mobile conversa com a API do projeto. A API é responsável por acessar o PostgreSQL e por executar as ferramentas solicitadas pelo agente. A OpenAI devolve pedidos de ferramenta ao backend; o backend valida os argumentos e executa a operação, sem dar acesso direto ao banco ao modelo. O agente representa o treinador, não um usuário cadastrado como aluno ou administrador. A chave da OpenAI ficará no ambiente do servidor, não no aplicativo mobile. A [documentação oficial da OpenAI](https://developers.openai.com/api/docs/guides/function-calling) descreve o fluxo de chamadas de ferramentas; suas [práticas de produção](https://developers.openai.com/api/docs/guides/production-best-practices) orientam a guardar a chave fora do código. Uma primeira opção é usar a Responses API com *function calling*; a escolha definitiva será feita quando o agente for implementado.
+A estrutura permanece pequena enquanto somente a API existe. Quando houver código
+mobile ou persistência, a organização do workspace e as bibliotecas dessas partes
+serão decididas na respectiva sprint. Não há ORM ou camadas de repositório nesta etapa.
 
-## Estrutura futura sugerida
-
-Esta árvore representa a direção do projeto, não pastas que já existem:
-
-```text
-training-platform/
-├── apps/
-│   ├── api/
-│   │   ├── app/
-│   │   │   ├── main.py         # inicialização do FastAPI
-│   │   │   ├── routers/        # endpoints HTTP
-│   │   │   ├── users/          # cadastro e perfis
-│   │   │   ├── workouts/       # planos, exercícios e acompanhamento
-│   │   │   ├── agent/          # orquestração e ferramentas do treinador IA
-│   │   │   └── persistence/    # conexão e modelos do banco
-│   │   ├── migrations/         # evolução do esquema do PostgreSQL
-│   │   ├── tests/
-│   │   └── requirements.txt
-│   └── mobile/
-│       ├── app.json            # configuração do Expo
-│       ├── src/
-│       │   ├── features/       # telas e fluxos por funcionalidade
-│       │   ├── components/     # componentes reutilizáveis
-│       │   └── services/       # cliente da API do projeto
-│       └── package.json
-└── docs/
-```
-
-A API atual permanece em `app/`. Quando houver código mobile, a equipe poderá mover a API para `apps/api/` e criar `apps/mobile/` no mesmo trabalho, ajustando imports, comandos e testes. Não é preciso criar pastas vazias agora. A biblioteca de navegação, o provedor de autenticação, o driver PostgreSQL e a forma exata de orquestrar o agente serão escolhidos nas sprints em que essas partes forem implementadas.
+A migração e suas diferenças públicas estão no [ADR 0003](adr/0003-rust-api.md).

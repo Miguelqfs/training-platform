@@ -1,8 +1,8 @@
-# ADR 0001 — Usuários em memória na primeira sprint
+# ADR 0001: Usuários em memória na primeira sprint
 
 ## Estado
 
-Aceito para a Sprint 1.
+Decisão histórica da Sprint 1. Stack e organização Python substituídas pelo [ADR 0003](0003-rust-api.md); os papéis e as regras de negócio são mantidos.
 
 ## Contexto
 

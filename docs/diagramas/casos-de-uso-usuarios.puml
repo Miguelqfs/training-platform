@@ -1,20 +1,35 @@
 @startuml
 left to right direction
-actor Aluno
-actor Administrador
+title Cadastro e listagem de usuários
+
+actor "Aluno" as aluno
+actor "Administrador" as administrador
 
 rectangle "Gerenciamento de usuários" {
   usecase "Cadastrar usuário" as cadastrar
-  usecase "Listar todos os usuários" as listar
+  usecase "Listar usuários cadastrados" as listar
 }
 
-Aluno --> cadastrar
-Administrador --> cadastrar
-Administrador --> listar
+aluno -- cadastrar
+administrador -- cadastrar
+administrador -- listar
+
+note right of cadastrar
+  Entrada: nome, e-mail e tipo de usuário.
+  Tipo: aluno (padrão) ou administrador.
+  Resultado: usuário criado com identificador.
+  Nome ou e-mail repetido impede o cadastro.
+end note
 
 note right of listar
-  Autenticação e autorização são futuras.
-  A Sprint 1 implementa a operação sem
-  verificar o papel de quem a solicita.
+  Retorna todos os usuários cadastrados:
+  identificador, nome, e-mail e tipo.
+  Sem cadastros, retorna uma lista vazia.
+end note
+
+note bottom of administrador
+  A listagem é um caso de uso do administrador.
+  O protótipo ainda não autentica o solicitante
+  nem aplica essas permissões na API.
 end note
 @enduml

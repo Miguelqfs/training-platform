@@ -1,27 +1,17 @@
-name: ci 
+name: ci
 
-on: 
+on:
   pull_request:
-    branches: [main, develop] # ci worflow for both branches
+    branches: [main, develop]
 
 jobs:
   tests:
-    name: Tests
+    name: Rust checks
     runs-on: ubuntu-latest
-
     steps:
-      - name: Check out code
-        uses: actions/checkout@v7
-
-      - name: Set up Python
-        uses: actions/setup-python@v7
-        with:
-          python-version: "3.12"
-      
-      - name: Install dependencies
-        run: |
-          pip install --upgrade pip
-          pip install -r requirements.txt
-      
-      - name: Run tests
-        run: python -m pytest -v
+      - uses: actions/checkout@v7
+      - name: Set up Rust
+        run: rustup update stable --no-self-update && rustup default stable && rustup component add rustfmt clippy
+      - run: cargo fmt --check
+      - run: cargo clippy --locked --all-targets -- -D warnings
+      - run: cargo test --locked

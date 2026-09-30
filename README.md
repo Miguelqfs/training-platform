@@ -1,30 +1,56 @@
-# Training Platform
+# Users API
 
-Projeto da disciplina de Métodos de Projetos de Software. A primeira sprint entrega uma API para cadastrar e listar usuários em memória. Os tipos de usuário são aluno (`student`) e administrador (`admin`). O treinador será um agente de IA em uma etapa futura.
+API em Rust com Axum. Os usuários ficam em memória, em ordem de criação, e são
+perdidos ao reiniciar o processo. Execute uma única instância para manter uma lista
+compartilhada entre todas as requisições.
 
-## Executar a API
+## Executar
 
-O projeto requer Python 3.12 e usa `pip` para instalar as dependências.
+Instale Rust estável com suporte à edição 2024 e execute:
 
-```bash
-python3.12 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-python -m uvicorn app.main:app --reload
+```sh
+cargo run --locked
 ```
 
-A documentação interativa fica em `http://127.0.0.1:8000/docs`. Use `POST /users/` para cadastrar e `GET /users/` para listar. Exemplo de cadastro:
+O endereço padrão é `127.0.0.1:8000`. Para escolher outro:
 
-```json
-{"username": "maria", "email": "maria@example.com", "role": "student"}
+```sh
+BIND_ADDRESS=0.0.0.0:8000 cargo run --locked
 ```
 
-O campo `role` é opcional e assume `student`. Os usuários são perdidos quando a API reinicia. Ainda não há autenticação ou autorização; a API deve ser usada somente como protótipo local.
+Ctrl+C encerra o servidor aguardando requisições em andamento. Em sistemas Unix,
+`SIGTERM` também inicia esse encerramento.
 
-## Testar
+## API
 
-```bash
-python -m pytest
+- `GET /users/`: lista os usuários (200).
+- `POST /users/`: recebe `username`, `email` e `role` opcional; retorna o usuário com `id` e `role` (201).
+- Os papéis aceitos são `student` e `admin`; `student` é usado quando `role` é omitido.
+- Nomes têm entre 1 e 50 caracteres Unicode depois de remover espaços externos.
+- Nome ou e-mail repetido retorna 409, sem distinguir maiúsculas de minúsculas.
+- JSON inválido, campos ausentes ou valores inválidos retornam 422.
+- `/users` redireciona para `/users/` com 307.
+
+```sh
+curl -X POST http://127.0.0.1:8000/users/ \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"davi","email":"davi@example.com"}'
+curl http://127.0.0.1:8000/users/
 ```
 
-As regras da sprint estão em [docs/specs/usuarios.md](docs/specs/usuarios.md), os diagramas em [docs/diagramas/](docs/diagramas/), a estrutura planejada em [docs/arquitetura.md](docs/arquitetura.md) e a decisão da primeira sprint em [docs/adr/0001-usuarios-em-memoria.md](docs/adr/0001-usuarios-em-memoria.md).
+Para cadastrar um administrador, inclua `"role":"admin"` no JSON. O papel
+classifica o usuário; autenticação e autorização ainda não foram implementadas.
+
+Os erros usam `{"detail":"mensagem"}`. Nomes e e-mails têm espaços externos
+removidos; e-mails são convertidos integralmente para minúsculas.
+As regras estão na [especificação](docs/specs/usuarios.md), a organização do
+código na [arquitetura](docs/arquitetura.md) e as diferenças em relação ao
+FastAPI no [ADR](docs/adr/0003-rust-api.md).
+
+## Verificar
+
+```sh
+cargo fmt --check
+cargo clippy --locked --all-targets -- -D warnings
+cargo test --locked
+```
