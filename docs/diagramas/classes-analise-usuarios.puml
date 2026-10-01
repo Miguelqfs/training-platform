@@ -1,32 +1,64 @@
 @startuml
 class "API de usuários" as API <<boundary>> {
-  +cadastrar(dados)
-  +listar()
+  +cadastrar(dados): Usuário
+  +listar(): Usuário[]
+  +tratarErros(): HTTP 422/409/503
 }
-
-class "Gerenciador de usuários" as Gerenciador <<control>> {
-  +adicionar(dados): Usuário
-  +listarTodos(): Usuário[]
+class UserService <<control>> {
+  +add_user(login, email, tipo, senha): User
+  +list_users(): User[]
 }
-
-class "Usuário" as Usuario <<entity>> {
+class "Validação de credenciais" as Credentials {
+  +validate_credentials(login, email, senha)
+  +hash_password(senha): texto
+}
+class User <<entity>> {
   +id: inteiro
   +username: texto
   +email: texto
-  +tipo: TipoUsuario
+  +role: UserRole
+  -password_hash: texto
 }
-
-enum TipoUsuario {
-  ALUNO
-  ADMINISTRADOR
+enum UserRole {
+  STUDENT
+  ADMIN
 }
-
-API --> Gerenciador
-Gerenciador --> "0..*" Usuario
-Usuario --> TipoUsuario
-
-note bottom of Gerenciador
-  A coleção em RAM é um detalhe do projeto
-  técnico, não uma entidade de análise.
+interface UserRepository {
+  +add(login, email, tipo, hash): User
+  +list_users(): User[]
+}
+class MemoryUserRepository {
+  -users: User[]
+  -lock: Lock
+}
+class SQLiteUserRepository {
+  -path: Path
+}
+class InvalidCredentialsError <<exception>>
+class DuplicateUserError <<exception>>
+class PersistenceError <<exception>>
+API --> UserService
+API ..> InvalidCredentialsError : 422
+API ..> DuplicateUserError : 409
+API ..> PersistenceError : 503
+UserService --> Credentials
+UserService --> UserRepository
+Credentials ..> InvalidCredentialsError : lança
+MemoryUserRepository ..|> UserRepository
+SQLiteUserRepository ..|> UserRepository
+MemoryUserRepository o-- "0..*" User
+SQLiteUserRepository --> "0..*" User : persiste no BD
+MemoryUserRepository ..> DuplicateUserError
+SQLiteUserRepository ..> DuplicateUserError
+SQLiteUserRepository ..> PersistenceError : encapsula sqlite3.Error
+User --> UserRole
+note bottom of Credentials
+  Login: 1 a 12 caracteres, sem números.
+  Senha: 8 a 128 caracteres, 3 categorias IAM,
+  diferente de login/e-mail; hash com salt.
+end note
+note bottom of UserRepository
+  USER_STORAGE: memory (padrão) ou sqlite.
+  Seleção no início da execução.
 end note
 @enduml

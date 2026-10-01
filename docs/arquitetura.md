@@ -2,7 +2,7 @@
 
 ## Estado atual
 
-Na Sprint 1, apenas a API de usuários é executável. O código fica em `app/`: `routers/` e `schemas.py` formam a fronteira HTTP; `users/service.py` controla o cadastro, a listagem e a coleção em RAM; `users/domain.py` define a entidade. O projeto usa Python 3.12, FastAPI e `pip`. Ainda não há aplicativo mobile, banco de dados ou integração com a OpenAI.
+No Laboratório 2, apenas a API de usuários é executável. O código fica em `app/`: `routers/` e `schemas.py` formam a fronteira HTTP; `users/service.py` valida credenciais e coordena cadastro/listagem; `users/repository.py` implementa o protocolo de persistência em RAM e SQLite; `users/credentials.py` valida login/senha e gera hashes; `users/domain.py` define a entidade. O projeto usa Python 3.12, FastAPI e `pip`. Ainda não há aplicativo mobile, PostgreSQL ou integração com a OpenAI.
 
 ## Stack planejada
 
@@ -56,3 +56,5 @@ training-platform/
 ```
 
 A API atual permanece em `app/`. Quando houver código mobile, a equipe poderá mover a API para `apps/api/` e criar `apps/mobile/` no mesmo trabalho, ajustando imports, comandos e testes. Não é preciso criar pastas vazias agora. A biblioteca de navegação, o provedor de autenticação, o driver PostgreSQL e a forma exata de orquestrar o agente serão escolhidos nas sprints em que essas partes forem implementadas.
+
+O armazenamento atual é selecionado na inicialização, conforme o [ADR 0003](adr/0003-validacao-persistencia.md). SQLite usa transações e restrições únicas; erros de validação e persistência são tratados na fronteira HTTP. PostgreSQL permanece uma possibilidade futura.
