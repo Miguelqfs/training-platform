@@ -2,7 +2,7 @@
 
 ## Estado
 
-Aceito para o Laboratório 2. Substitui a restrição de RAM do ADR 0001.
+Aceito para o Sprint 2. Substitui a restrição de RAM do ADR 0001.
 
 ## Decisão
 

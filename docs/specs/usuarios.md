@@ -1,4 +1,4 @@
-# Gerenciamento de usuários: Laboratório 2
+# Gerenciamento de usuários: Sprint 2
 
 ## Contexto
 

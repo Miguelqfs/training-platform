@@ -2,7 +2,7 @@
 
 ## Estado atual
 
-No Laboratório 2, apenas a API de usuários é executável. O código fica em `app/`: `routers/` e `schemas.py` formam a fronteira HTTP; `users/service.py` valida credenciais e coordena cadastro/listagem; `users/repository.py` implementa o protocolo de persistência em RAM e SQLite; `users/credentials.py` valida login/senha e gera hashes; `users/domain.py` define a entidade. O projeto usa Python 3.12, FastAPI e `pip`. Ainda não há aplicativo mobile, PostgreSQL ou integração com a OpenAI.
+Na Sprint 2, apenas a API de usuários é executável. O código fica em `app/`: `routers/` e `schemas.py` formam a fronteira HTTP; `users/service.py` valida credenciais e coordena cadastro/listagem; `users/repository.py` implementa o protocolo de persistência em RAM e SQLite; `users/credentials.py` valida login/senha e gera hashes; `users/domain.py` define a entidade. O projeto usa Python 3.12, FastAPI e `pip`. Ainda não há aplicativo mobile, PostgreSQL ou integração com a OpenAI.
 
 ## Stack planejada
 
