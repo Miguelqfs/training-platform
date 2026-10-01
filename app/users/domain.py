@@ -1,8 +1,8 @@
-from dataclasses import dataclass
-from enum import Enum
+from dataclasses import dataclass, field
+from enum import StrEnum
 
 
-class UserRole(str, Enum):
+class UserRole(StrEnum):
     STUDENT = "student"
     ADMIN = "admin"
 
@@ -13,7 +13,16 @@ class User:
     username: str
     email: str
     role: UserRole
+    password_hash: str = field(repr=False)
 
 
 class DuplicateUserError(Exception):
+    pass
+
+
+class InvalidCredentialsError(ValueError):
+    pass
+
+
+class PersistenceError(Exception):
     pass

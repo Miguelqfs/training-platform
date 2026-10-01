@@ -6,7 +6,7 @@ from app.main import create_app
 
 @pytest.fixture
 def client():
-    with TestClient(create_app()) as test_client:
+    with TestClient(create_app(storage="memory")) as test_client:
         yield test_client
 
 
@@ -14,11 +14,21 @@ def test_add_and_list_users_with_both_roles(client: TestClient) -> None:
     assert client.get("/users/").json() == []
 
     student = client.post(
-        "/users/", json={"username": "maria", "email": "maria@example.com"}
+        "/users/",
+        json={
+            "username": "maria",
+            "password": "Abcdef12",
+            "email": "maria@example.com",
+        },
     )
     admin = client.post(
         "/users/",
-        json={"username": "ana", "email": "ana@example.com", "role": "admin"},
+        json={
+            "username": "ana",
+            "password": "Abcdef12",
+            "email": "ana@example.com",
+            "role": "admin",
+        },
     )
 
     assert student.status_code == 201
@@ -29,16 +39,33 @@ def test_add_and_list_users_with_both_roles(client: TestClient) -> None:
     ]
 
 
-def test_rejects_duplicate_username_or_email_without_case_sensitivity(client: TestClient) -> None:
+def test_rejects_duplicate_username_or_email_without_case_sensitivity(
+    client: TestClient,
+) -> None:
     client.post(
-        "/users/", json={"username": "Maria", "email": "Maria@example.com"}
+        "/users/",
+        json={
+            "username": "Maria",
+            "password": "Abcdef12",
+            "email": "Maria@example.com",
+        },
     )
 
     duplicate_username = client.post(
-        "/users/", json={"username": " MARIA ", "email": "other@example.com"}
+        "/users/",
+        json={
+            "username": " MARIA ",
+            "password": "Abcdef12",
+            "email": "other@example.com",
+        },
     )
     duplicate_email = client.post(
-        "/users/", json={"username": "other", "email": "maria@EXAMPLE.com"}
+        "/users/",
+        json={
+            "username": "other",
+            "password": "Abcdef12",
+            "email": "maria@EXAMPLE.com",
+        },
     )
 
     assert duplicate_username.status_code == 409
@@ -49,9 +76,14 @@ def test_rejects_duplicate_username_or_email_without_case_sensitivity(client: Te
 @pytest.mark.parametrize(
     "payload",
     [
-        {"username": "   ", "email": "maria@example.com"},
-        {"username": "maria", "email": "not-an-email"},
-        {"username": "maria", "email": "maria@example.com", "role": "trainer"},
+        {"username": "   ", "password": "Abcdef12", "email": "maria@example.com"},
+        {"username": "maria", "password": "Abcdef12", "email": "not-an-email"},
+        {
+            "username": "maria",
+            "password": "Abcdef12",
+            "email": "maria@example.com",
+            "role": "trainer",
+        },
     ],
 )
 def test_rejects_invalid_input(client: TestClient, payload: dict[str, str]) -> None:
@@ -61,8 +93,13 @@ def test_rejects_invalid_input(client: TestClient, payload: dict[str, str]) -> N
 
 def test_new_app_has_an_empty_collection(client: TestClient) -> None:
     client.post(
-        "/users/", json={"username": "maria", "email": "maria@example.com"}
+        "/users/",
+        json={
+            "username": "maria",
+            "password": "Abcdef12",
+            "email": "maria@example.com",
+        },
     )
 
-    with TestClient(create_app()) as another_client:
+    with TestClient(create_app(storage="memory")) as another_client:
         assert another_client.get("/users/").json() == []
