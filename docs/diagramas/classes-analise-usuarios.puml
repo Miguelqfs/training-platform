@@ -1,0 +1,64 @@
+@startuml
+class "API de usuários" as API <<boundary>> {
+  +cadastrar(dados): Usuário
+  +listar(): Usuário[]
+  +tratarErros(): HTTP 422/409/503
+}
+class UserService <<control>> {
+  +add_user(login, email, tipo, senha): User
+  +list_users(): User[]
+}
+class "Validação de credenciais" as Credentials {
+  +validate_credentials(login, email, senha)
+  +hash_password(senha): texto
+}
+class User <<entity>> {
+  +id: inteiro
+  +username: texto
+  +email: texto
+  +role: UserRole
+  -password_hash: texto
+}
+enum UserRole {
+  STUDENT
+  ADMIN
+}
+interface UserRepository {
+  +add(login, email, tipo, hash): User
+  +list_users(): User[]
+}
+class MemoryUserRepository {
+  -users: User[]
+  -lock: Lock
+}
+class SQLiteUserRepository {
+  -path: Path
+}
+class InvalidCredentialsError <<exception>>
+class DuplicateUserError <<exception>>
+class PersistenceError <<exception>>
+API --> UserService
+API ..> InvalidCredentialsError : 422
+API ..> DuplicateUserError : 409
+API ..> PersistenceError : 503
+UserService --> Credentials
+UserService --> UserRepository
+Credentials ..> InvalidCredentialsError : lança
+MemoryUserRepository ..|> UserRepository
+SQLiteUserRepository ..|> UserRepository
+MemoryUserRepository o-- "0..*" User
+SQLiteUserRepository --> "0..*" User : persiste no BD
+MemoryUserRepository ..> DuplicateUserError
+SQLiteUserRepository ..> DuplicateUserError
+SQLiteUserRepository ..> PersistenceError : encapsula sqlite3.Error
+User --> UserRole
+note bottom of Credentials
+  Login: 1 a 12 caracteres, sem números.
+  Senha: 8 a 128 caracteres, 3 categorias IAM,
+  diferente de login/e-mail; hash com salt.
+end note
+note bottom of UserRepository
+  USER_STORAGE: memory (padrão) ou sqlite.
+  Seleção no início da execução.
+end note
+@enduml
