@@ -8,6 +8,22 @@ class UserRole(StrEnum):
 
 
 @dataclass(frozen=True)
+class UserRegistration:
+    username: str
+    email: str
+    role: UserRole
+    password: str = field(repr=False)
+
+
+@dataclass(frozen=True)
+class NewUser:
+    username: str
+    email: str
+    role: UserRole
+    password_hash: str = field(repr=False)
+
+
+@dataclass(frozen=True)
 class User:
     id: int
     username: str
@@ -21,6 +37,14 @@ class DuplicateUserError(Exception):
 
 
 class InvalidCredentialsError(ValueError):
+    pass
+
+
+class InvalidLoginError(InvalidCredentialsError):
+    pass
+
+
+class InvalidPasswordError(InvalidCredentialsError):
     pass
 
 

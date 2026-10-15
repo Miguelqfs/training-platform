@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.schemas import User, UserCreate
-from app.users.domain import DuplicateUserError
+from app.users.domain import DuplicateUserError, UserRegistration
 from app.users.service import UserService
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -19,10 +19,12 @@ def create_user(
 ) -> User:
     try:
         user = service.add_user(
-            payload.username,
-            str(payload.email),
-            payload.role,
-            payload.password.get_secret_value(),
+            UserRegistration(
+                username=payload.username,
+                email=str(payload.email),
+                role=payload.role,
+                password=payload.password.get_secret_value(),
+            )
         )
     except DuplicateUserError as error:
         raise HTTPException(

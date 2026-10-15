@@ -1,10 +1,11 @@
 from pydantic import BaseModel, EmailStr, Field, SecretStr, field_validator
 
 from app.users.domain import UserRole
+from app.users.policy import MAX_LOGIN_LENGTH, MIN_LOGIN_LENGTH
 
 
 class UserFields(BaseModel):
-    username: str = Field(min_length=1, max_length=12)
+    username: str = Field(min_length=MIN_LOGIN_LENGTH, max_length=MAX_LOGIN_LENGTH)
     email: EmailStr
     role: UserRole = UserRole.STUDENT
 

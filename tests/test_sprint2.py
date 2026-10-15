@@ -9,8 +9,11 @@ from fastapi.testclient import TestClient
 from app.main import create_app
 from app.users.domain import (
     DuplicateUserError,
-    InvalidCredentialsError,
+    InvalidLoginError,
+    InvalidPasswordError,
+    NewUser,
     PersistenceError,
+    UserRegistration,
     UserRole,
 )
 from app.users.repository import MemoryUserRepository, SQLiteUserRepository
@@ -25,32 +28,49 @@ def payload(username: str = "maria", password: str = "Abcdef12") -> dict[str, st
     }
 
 
-@pytest.mark.parametrize("username", ["", "   ", "a" * 13, "user1", "user١", "user²"])
-def test_invalid_login_does_not_save(username: str) -> None:
-    service = UserService()
-    with pytest.raises(InvalidCredentialsError):
-        service.add_user(username, "maria@example.com", UserRole.STUDENT, "Abcdef12")
+@pytest.mark.parametrize(
+    "username,message",
+    [
+        ("", "Login não pode ser vazio"),
+        ("   ", "Login não pode ser vazio"),
+        ("a" * 13, "Login deve ter no máximo 12 caracteres"),
+        ("user1", "Login não pode conter números"),
+        ("user١", "Login não pode conter números"),
+        ("user²", "Login não pode conter números"),
+    ],
+)
+def test_invalid_login_does_not_save(username: str, message: str) -> None:
+    service = UserService(MemoryUserRepository())
+    with pytest.raises(InvalidLoginError, match=message):
+        service.add_user(
+            UserRegistration(
+                username=username,
+                email="maria@example.com",
+                role=UserRole.STUDENT,
+                password="Abcdef12",
+            )
+        )
     assert service.list_users() == []
 
 
 @pytest.mark.parametrize(
-    "password",
+    "password,message",
     [
-        "",
-        "Abc1234",
-        "Aa1" + "a" * 126,
-        "abcdefgh",
-        "ABCDEFG1",
-        "Abcdefgh",
-        "abcdefg?",
-        "Abcdefg?",
+        ("", "Senha deve ter de 8 a 128 caracteres"),
+        ("Abc1234", "Senha deve ter de 8 a 128 caracteres"),
+        ("Aa1" + "a" * 126, "Senha deve ter de 8 a 128 caracteres"),
+        ("abcdefgh", "Senha deve conter pelo menos 3 categorias"),
+        ("ABCDEFG1", "Senha deve conter pelo menos 3 categorias"),
+        ("Abcdefgh", "Senha deve conter pelo menos 3 categorias"),
+        ("abcdefg?", "Senha deve conter pelo menos 3 categorias"),
+        ("Abcdefg?", "Senha deve conter pelo menos 3 categorias"),
     ],
 )
-def test_invalid_password_does_not_save(password: str) -> None:
+def test_invalid_password_does_not_save(password: str, message: str) -> None:
     with TestClient(create_app(storage="memory")) as client:
-        assert (
-            client.post("/users/", json=payload(password=password)).status_code == 422
-        )
+        response = client.post("/users/", json=payload(password=password))
+        assert response.status_code == 422
+        assert response.json()["detail"].startswith(message)
         assert client.get("/users/").json() == []
 
 
@@ -74,10 +94,17 @@ def test_repository_uniqueness_and_password_hash(storage: str, tmp_path: Path) -
     )
     service = UserService(repository)
     user = service.add_user(
-        " Maria ", "MARIA@example.com", UserRole.STUDENT, "Abcdef12"
+        UserRegistration(
+            username=" Maria ",
+            email="MARIA@example.com",
+            role=UserRole.STUDENT,
+            password="Abcdef12",
+        )
     )
     algorithm, iterations, salt, digest = user.password_hash.split("$")
     assert algorithm == "pbkdf2_sha256"
+    assert int(iterations) == 600_000
+    assert len(bytes.fromhex(salt)) == 16
     assert (
         hashlib.pbkdf2_hmac(
             "sha256", b"Abcdef12", bytes.fromhex(salt), int(iterations)
@@ -90,16 +117,25 @@ def test_repository_uniqueness_and_password_hash(storage: str, tmp_path: Path) -
         ("other", "Maria@example.com"),
     ]:
         with pytest.raises(DuplicateUserError):
-            service.add_user(username, email, UserRole.ADMIN, "Abcdef12")
+            service.add_user(
+                UserRegistration(
+                    username=username,
+                    email=email,
+                    role=UserRole.ADMIN,
+                    password="Abcdef12",
+                )
+            )
     assert len(service.list_users()) == 1
 
 
 def test_sqlite_survives_restart_and_continues_ids(tmp_path: Path) -> None:
     database = tmp_path / "users.db"
     with TestClient(create_app(storage="sqlite", database_path=database)) as client:
-        assert client.post("/users/", json=payload()).status_code == 201
+        response = client.post("/users/", json=payload())
+        assert response.status_code == 201
+        saved_user = response.json()
     with TestClient(create_app(storage="sqlite", database_path=database)) as client:
-        assert client.get("/users/").json()[0]["username"] == "maria"
+        assert client.get("/users/").json() == [saved_user]
         assert client.post("/users/", json=payload()).status_code == 409
         assert client.post("/users/", json=payload("ana")).json()["id"] == 2
     assert b"Abcdef12" not in database.read_bytes()
@@ -147,7 +183,14 @@ def test_concurrent_duplicates_save_once(storage: str, tmp_path: Path) -> None:
 
     def add() -> bool:
         try:
-            repository.add("maria", "maria@example.com", UserRole.STUDENT, "hash")
+            repository.add(
+                NewUser(
+                    username="maria",
+                    email="maria@example.com",
+                    role=UserRole.STUDENT,
+                    password_hash="hash",
+                )
+            )
             return True
         except DuplicateUserError:
             return False
@@ -174,13 +217,72 @@ def test_invalid_request_never_echoes_password() -> None:
     "username,email,password",
     [
         ("Abcdefg!", "a@example.com", "Abcdefg!"),
+        ("Abcdefg!", "a@example.com", "aBCDEFG!"),
         ("maria", "abcdef1!@example.com", "abcdef1!@example.com"),
+        ("other", "abc123@example.com", "ABC123@EXAMPLE.COM"),
     ],
 )
 def test_password_cannot_equal_normalized_identity(
     username: str, email: str, password: str
 ) -> None:
-    service = UserService()
-    with pytest.raises(InvalidCredentialsError):
-        service.add_user(username, email, UserRole.STUDENT, password)
+    service = UserService(MemoryUserRepository())
+    with pytest.raises(
+        InvalidPasswordError, match="Senha não pode ser igual ao login ou e-mail"
+    ):
+        service.add_user(
+            UserRegistration(
+                username=username,
+                email=email,
+                role=UserRole.STUDENT,
+                password=password,
+            )
+        )
     assert service.list_users() == []
+
+
+def test_numeric_login_error_identifies_the_rule() -> None:
+    with TestClient(create_app(storage="memory")) as client:
+        response = client.post("/users/", json=payload("user١"))
+        assert response.status_code == 422
+        assert response.json() == {"detail": "Login não pode conter números"}
+        assert client.get("/users/").json() == []
+
+
+@pytest.mark.parametrize("storage", ["memory", "sqlite"])
+def test_same_password_uses_distinct_salts(storage: str, tmp_path: Path) -> None:
+    repository = (
+        MemoryUserRepository()
+        if storage == "memory"
+        else SQLiteUserRepository(tmp_path / "users.db")
+    )
+    service = UserService(repository)
+    users = [
+        service.add_user(
+            UserRegistration(
+                username=username,
+                email=f"{username}@example.com",
+                role=UserRole.STUDENT,
+                password="Abcdef12",
+            )
+        )
+        for username in ("maria", "ana")
+    ]
+    assert users[0].password_hash.split("$")[2] != users[1].password_hash.split("$")[2]
+
+
+def test_sqlite_write_failure_leaves_no_partial_user(tmp_path: Path) -> None:
+    database = tmp_path / "users.db"
+    with TestClient(create_app(storage="sqlite", database_path=database)) as client:
+        assert client.post("/users/", json=payload()).status_code == 201
+        with sqlite3.connect(database) as connection:
+            connection.execute("""CREATE TRIGGER fail_insert AFTER INSERT ON users
+                BEGIN SELECT RAISE(ABORT, 'simulated write failure'); END""")
+        response = client.post("/users/", json=payload("ana"))
+        assert response.status_code == 503
+        assert [user["username"] for user in client.get("/users/").json()] == ["maria"]
+        with sqlite3.connect(database) as connection:
+            assert connection.execute("SELECT COUNT(*) FROM users").fetchone()[0] == 1
+            connection.execute("DROP TRIGGER fail_insert")
+        response = client.post("/users/", json=payload("ana"))
+        assert response.status_code == 201
+        assert response.json()["id"] == 2

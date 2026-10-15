@@ -4,6 +4,13 @@
 
 Na Sprint 2, apenas a API de usuários é executável. O código fica em `app/`: `routers/` e `schemas.py` formam a fronteira HTTP; `users/service.py` valida credenciais e coordena cadastro/listagem; `users/repository.py` implementa o protocolo de persistência em RAM e SQLite; `users/credentials.py` valida login/senha e gera hashes; `users/domain.py` define a entidade. O projeto usa Python 3.12, FastAPI e `pip`. Ainda não há aplicativo mobile, PostgreSQL ou integração com a OpenAI.
 
+Na revisão da Entrega 1, `users/factory.py` concentra a seleção do repositório e
+`error_handlers.py` registra o tratamento HTTP. `main.py` compõe esses elementos.
+O serviço recebe somente o contrato `UserRepository`, sem instanciar RAM ou
+SQLite. `users/policy.py` reúne os limites das credenciais, compartilhados pela
+validação e pelo esquema HTTP. As mudanças de contrato Python estão no
+[ADR 0004](adr/0004-revisao-entrega-1.md).
+
 ## Stack planejada
 
 | Parte | Tecnologias | Papel |
