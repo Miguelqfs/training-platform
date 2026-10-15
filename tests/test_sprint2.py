@@ -10,7 +10,9 @@ from app.main import create_app
 from app.users.domain import (
     DuplicateUserError,
     InvalidCredentialsError,
+    NewUser,
     PersistenceError,
+    UserRegistration,
     UserRole,
 )
 from app.users.repository import MemoryUserRepository, SQLiteUserRepository
@@ -27,9 +29,16 @@ def payload(username: str = "maria", password: str = "Abcdef12") -> dict[str, st
 
 @pytest.mark.parametrize("username", ["", "   ", "a" * 13, "user1", "user١", "user²"])
 def test_invalid_login_does_not_save(username: str) -> None:
-    service = UserService()
+    service = UserService(MemoryUserRepository())
     with pytest.raises(InvalidCredentialsError):
-        service.add_user(username, "maria@example.com", UserRole.STUDENT, "Abcdef12")
+        service.add_user(
+            UserRegistration(
+                username=username,
+                email="maria@example.com",
+                role=UserRole.STUDENT,
+                password="Abcdef12",
+            )
+        )
     assert service.list_users() == []
 
 
@@ -74,7 +83,12 @@ def test_repository_uniqueness_and_password_hash(storage: str, tmp_path: Path) -
     )
     service = UserService(repository)
     user = service.add_user(
-        " Maria ", "MARIA@example.com", UserRole.STUDENT, "Abcdef12"
+        UserRegistration(
+            username=" Maria ",
+            email="MARIA@example.com",
+            role=UserRole.STUDENT,
+            password="Abcdef12",
+        )
     )
     algorithm, iterations, salt, digest = user.password_hash.split("$")
     assert algorithm == "pbkdf2_sha256"
@@ -90,7 +104,14 @@ def test_repository_uniqueness_and_password_hash(storage: str, tmp_path: Path) -
         ("other", "Maria@example.com"),
     ]:
         with pytest.raises(DuplicateUserError):
-            service.add_user(username, email, UserRole.ADMIN, "Abcdef12")
+            service.add_user(
+                UserRegistration(
+                    username=username,
+                    email=email,
+                    role=UserRole.ADMIN,
+                    password="Abcdef12",
+                )
+            )
     assert len(service.list_users()) == 1
 
 
@@ -147,7 +168,14 @@ def test_concurrent_duplicates_save_once(storage: str, tmp_path: Path) -> None:
 
     def add() -> bool:
         try:
-            repository.add("maria", "maria@example.com", UserRole.STUDENT, "hash")
+            repository.add(
+                NewUser(
+                    username="maria",
+                    email="maria@example.com",
+                    role=UserRole.STUDENT,
+                    password_hash="hash",
+                )
+            )
             return True
         except DuplicateUserError:
             return False
@@ -182,7 +210,14 @@ def test_invalid_request_never_echoes_password() -> None:
 def test_password_cannot_equal_normalized_identity(
     username: str, email: str, password: str
 ) -> None:
-    service = UserService()
+    service = UserService(MemoryUserRepository())
     with pytest.raises(InvalidCredentialsError):
-        service.add_user(username, email, UserRole.STUDENT, password)
+        service.add_user(
+            UserRegistration(
+                username=username,
+                email=email,
+                role=UserRole.STUDENT,
+                password=password,
+            )
+        )
     assert service.list_users() == []
