@@ -25,7 +25,8 @@ def validate_credentials(username: str, email: str, password: str) -> None:
         raise InvalidCredentialsError(
             "Senha deve ter de 8 a 128 caracteres e três categorias: maiúsculas, minúsculas, números ou símbolos IAM"
         )
-    if password in (username, email):
+    normalized_password = password.casefold()
+    if normalized_password in (username.casefold(), email.casefold()):
         raise InvalidCredentialsError("Senha não pode ser igual ao login ou e-mail")
 
 

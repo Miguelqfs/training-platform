@@ -174,7 +174,9 @@ def test_invalid_request_never_echoes_password() -> None:
     "username,email,password",
     [
         ("Abcdefg!", "a@example.com", "Abcdefg!"),
+        ("Abcdefg!", "a@example.com", "aBCDEFG!"),
         ("maria", "abcdef1!@example.com", "abcdef1!@example.com"),
+        ("other", "abc123@example.com", "ABC123@EXAMPLE.COM"),
     ],
 )
 def test_password_cannot_equal_normalized_identity(
