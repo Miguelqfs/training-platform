@@ -1,6 +1,25 @@
-# Training Platform
+# Training Plataform
 
-Projeto da disciplina de Métodos de Projetos de Software. A Sprint 2 entrega cadastro com tratamento de erros e armazenamento em RAM ou SQLite. Os tipos de usuário são aluno (`student`) e administrador (`admin`). O treinador será um agente de IA em uma etapa futura.
+Projeto da disciplina de Métodos de Projetos de Software. O produto pretende reunir o acompanhamento de treinos e, em etapas futuras, usar um agente de IA para ajudar o aluno a ajustar seus treinos. A Sprint 2 entrega cadastro com tratamento de erros e armazenamento em RAM ou SQLite. Os tipos de usuário são aluno (`student`) e administrador (`admin`). O treinador será um agente de IA em uma etapa futura.
+
+## Equipe
+
+| Integrante | Matrícula | GitHub |
+| --- | --- | --- |
+| Artur Coelho Batista Guedes Pereira | 20240007863 | [@arturpereira12](https://github.com/arturpereira12) |
+| Davi de Oliveira Gurgel | 20240007881 | [@Davi-Gurgel](https://github.com/Davi-Gurgel) |
+| Luigi Emanuel Martins Schmitt | 20240008047 | [@luigischmitt](https://github.com/luigischmitt) |
+| Miguel de Queiroz Fernandes Soares | 20240008109 | [@Miguelqfs](https://github.com/Miguelqfs) |
+| Rafael Torres Nobrega Gomes | 20240097646 | [@rafaeltorresng](https://github.com/rafaeltorresng) |
+
+## Documentação de requisitos
+
+- [Visão e descrição geral](docs/01-visao.md)
+- [Glossário](docs/02-glossario.md)
+- [Elicitação e evidências](docs/03-elicitacao.md)
+- [Requisitos funcionais de usuários](openspec/specs/usuarios/spec.md)
+- [Requisitos não funcionais](openspec/specs/rnf/)
+- [Casos de uso](docs/04-casos-de-uso/README.md), [análise](docs/05-analise.md) e [projeto](docs/08-projeto.md)
 
 ## Executar a API
 
