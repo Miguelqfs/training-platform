@@ -40,5 +40,13 @@ class InvalidCredentialsError(ValueError):
     pass
 
 
+class InvalidLoginError(InvalidCredentialsError):
+    pass
+
+
+class InvalidPasswordError(InvalidCredentialsError):
+    pass
+
+
 class PersistenceError(Exception):
     pass
