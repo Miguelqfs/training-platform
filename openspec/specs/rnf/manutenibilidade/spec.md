@@ -2,20 +2,20 @@
 
 ## Purpose
 
-Permitir selecionar o mecanismo de armazenamento sem alteração de código.
+Permitir substituir a persistência pelo contrato, sem acoplar o serviço à RAM ou ao SQLite.
 
 ## Requirements
 
-### Requirement: NF-MAN-01 — Alternar mecanismo de armazenamento
+### Requirement: NF-MAN-01 — Depender do contrato de persistência
 
-O sistema DEVE alternar entre os 2 mecanismos de persistência previstos, RAM e SQLite, mediante configuração no início do processo, com 0 alterações no código da API e do serviço de usuários.
+`UserService` DEVE receber explicitamente um objeto compatível com `UserRepository` e ter 0 referências a `MemoryUserRepository` ou `SQLiteUserRepository`. Um terceiro repositório compatível DEVE poder executar cadastro e listagem com 0 alterações no serviço ou nas rotas. A seleção por configuração é RF05 e não constitui outro RNF.
 
 **Prioridade:** Essencial
 
 **Casos de uso:** UC01, UC02
 
-#### Scenario: Troca de mecanismo
+#### Scenario: Repositório substituto
 
-- **GIVEN** a aplicação configurada com `USER_STORAGE=memory`
-- **WHEN** o operador altera a configuração para `USER_STORAGE=sqlite` e reinicia a aplicação
-- **THEN** o armazenamento muda para SQLite com 0 alterações no código da API e do serviço
+- **GIVEN** um repositório de teste que implementa `add(NewUser)` e `list_users()` sem herdar dos repositórios existentes
+- **WHEN** ele é fornecido a `UserService` para cadastrar e listar um usuário
+- **THEN** ambas as operações usam esse repositório, sem modificar o serviço ou as rotas

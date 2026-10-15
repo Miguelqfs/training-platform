@@ -4,17 +4,32 @@
 
 O produto terá alunos que acompanham seus treinos e administradores que operam a plataforma. O treinador será um agente de IA que trabalhará com os treinos em uma etapa futura; ele não é um tipo de usuário nesta sprint.
 
-## Funcionalidades
+## Requisitos em vigor
 
-- Adicionar um usuário com `username` (login), `email`, `password` e `role` (`student` ou `admin`). Se `role` for omitido, o usuário será `student`, preservando o contrato inicial da API.
-- Gerar um identificador inteiro único em cada instância da aplicação.
-- Rejeitar `username` vazio, composto só de espaços ou com mais de 12 caracteres ou com números Unicode, e e-mail inválido.
-- Rejeitar `username` ou e-mail já cadastrado, sem diferenciar maiúsculas de minúsculas e ignorando espaços nas extremidades.
-- Listar todos os usuários cadastrados, incluindo seus identificadores e tipos.
-- Selecionar RAM (`USER_STORAGE=memory`, padrão) ou SQLite (`USER_STORAGE=sqlite`, caminho `USER_DATABASE`) no início da execução. RAM é isolada por processo; SQLite preserva os usuários e IDs entre reinicializações.
-- Validar senha conforme política padrão IAM: 8 a 128 caracteres, três das quatro categorias (`A-Z`, `a-z`, `0-9`, `!@#$%^&*()_+-=[]{}|'`), diferente de login ou e-mail normalizados. Senhas não expiram.
-- Tratar validação com `InvalidCredentialsError`, duplicidade com `DuplicateUserError` e erros SQLite com `PersistenceError`, preservando a causa original.
-- Armazenar somente hash de senha com salt aleatório; nunca retornar senha ou hash.
+A especificação normativa, com IDs, prioridades e cenários de sucesso, erro e
+limites, está em [OpenSpec: usuários](../../openspec/specs/usuarios/spec.md).
+Este documento é o ponto de entrada para o contrato da sprint, sem duplicar as
+regras normativas.
+
+| ID | Requisito funcional | Prioridade |
+| --- | --- | --- |
+| RF01 | Cadastrar usuário e gerar ID, rejeitando duplicidades. | Essencial |
+| RF02 | Validar login. | Essencial |
+| RF03 | Validar senha pela política IAM padrão. | Essencial |
+| RF04 | Listar todos os usuários. | Essencial |
+| RF05 | Selecionar RAM ou SQLite na inicialização. | Essencial |
+| RF06 | Validar e-mail. | Essencial |
+| RF07 | Validar papel. | Essencial |
+
+Os RNFs ficam separados por categoria:
+
+- [Segurança](../../openspec/specs/rnf/seguranca/spec.md): exposição de credenciais e armazenamento de hash.
+- [Confiabilidade](../../openspec/specs/rnf/confiabilidade/spec.md): indisponibilidade, atomicidade e durabilidade SQLite.
+- [Manutenibilidade](../../openspec/specs/rnf/manutenibilidade/spec.md): substituição do repositório pelo contrato.
+- [Usabilidade](../../openspec/specs/rnf/usabilidade/spec.md): identificação da regra inválida nas respostas de validação.
+
+Os contratos Python alterados na revisão estão no
+[ADR 0004](../adr/0004-revisao-entrega-1.md).
 
 ## API da sprint
 

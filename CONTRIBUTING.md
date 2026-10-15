@@ -134,6 +134,10 @@ docs/adr-event-sourcing
 
 > Independentes de linguagem. Válidas para qualquer camada.
 
+No código, mantenha identificadores em inglês, seguindo os módulos existentes.
+A documentação, as mensagens de domínio e as descrições de commits ficam em
+português. Nomes de bibliotecas e formatos de erro de terceiros são preservados.
+
 ### 3.1 Nomes revelam intenção
 
 ```
