@@ -4,13 +4,17 @@ from pathlib import Path
 from threading import Lock
 from typing import Protocol
 
-from app.users.domain import DuplicateUserError, PersistenceError, User, UserRole
+from app.users.domain import (
+    DuplicateUserError,
+    NewUser,
+    PersistenceError,
+    User,
+    UserRole,
+)
 
 
 class UserRepository(Protocol):
-    def add(
-        self, username: str, email: str, role: UserRole, password_hash: str
-    ) -> User: ...
+    def add(self, data: NewUser) -> User: ...
     def list_users(self) -> list[User]: ...
 
 
@@ -19,17 +23,21 @@ class MemoryUserRepository:
         self._users: list[User] = []
         self._lock = Lock()
 
-    def add(
-        self, username: str, email: str, role: UserRole, password_hash: str
-    ) -> User:
+    def add(self, data: NewUser) -> User:
         with self._lock:
             if any(
-                user.username.casefold() == username.casefold()
-                or user.email.casefold() == email.casefold()
+                user.username.casefold() == data.username.casefold()
+                or user.email.casefold() == data.email.casefold()
                 for user in self._users
             ):
                 raise DuplicateUserError("Usuário ou e-mail já cadastrado")
-            user = User(len(self._users) + 1, username, email, role, password_hash)
+            user = User(
+                id=len(self._users) + 1,
+                username=data.username,
+                email=data.email,
+                role=data.role,
+                password_hash=data.password_hash,
+            )
             self._users.append(user)
             return user
 
@@ -57,24 +65,28 @@ class SQLiteUserRepository:
                 "Não foi possível inicializar o banco de usuários"
             ) from error
 
-    def add(
-        self, username: str, email: str, role: UserRole, password_hash: str
-    ) -> User:
+    def add(self, data: NewUser) -> User:
         try:
             with closing(sqlite3.connect(self._path)) as connection, connection:
                 cursor = connection.execute(
                     "INSERT INTO users (username, username_key, email, email_key, role, password_hash) VALUES (?, ?, ?, ?, ?, ?)",
                     (
-                        username,
-                        username.casefold(),
-                        email,
-                        email.casefold(),
-                        role.value,
-                        password_hash,
+                        data.username,
+                        data.username.casefold(),
+                        data.email,
+                        data.email.casefold(),
+                        data.role.value,
+                        data.password_hash,
                     ),
                 )
                 assert cursor.lastrowid is not None
-                return User(cursor.lastrowid, username, email, role, password_hash)
+                return User(
+                    id=cursor.lastrowid,
+                    username=data.username,
+                    email=data.email,
+                    role=data.role,
+                    password_hash=data.password_hash,
+                )
         except sqlite3.IntegrityError as error:
             if error.sqlite_errorcode in (
                 sqlite3.SQLITE_CONSTRAINT_UNIQUE,

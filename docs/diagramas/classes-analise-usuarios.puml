@@ -1,16 +1,32 @@
 @startuml
+!pragma layout smetana
 class "API de usuários" as API <<boundary>> {
   +cadastrar(dados): Usuário
   +listar(): Usuário[]
   +tratarErros(): HTTP 422/409/503
 }
 class UserService <<control>> {
-  +add_user(login, email, tipo, senha): User
+  +UserService(repository: UserRepository)
+  +add_user(registration: UserRegistration): User
   +list_users(): User[]
 }
 class "Validação de credenciais" as Credentials {
   +validate_credentials(login, email, senha)
+  +validate_login(login)
+  +validate_password(senha)
   +hash_password(senha): texto
+}
+class UserRegistration <<dados de entrada>> {
+  +username: texto
+  +email: texto
+  +role: UserRole
+  -password: texto
+}
+class NewUser <<dados para persistência>> {
+  +username: texto
+  +email: texto
+  +role: UserRole
+  -password_hash: texto
 }
 class User <<entity>> {
   +id: inteiro
@@ -24,7 +40,7 @@ enum UserRole {
   ADMIN
 }
 interface UserRepository {
-  +add(login, email, tipo, hash): User
+  +add(data: NewUser): User
   +list_users(): User[]
 }
 class MemoryUserRepository {
@@ -35,15 +51,27 @@ class SQLiteUserRepository {
   -path: Path
 }
 class InvalidCredentialsError <<exception>>
+class InvalidLoginError <<exception>>
+class InvalidPasswordError <<exception>>
 class DuplicateUserError <<exception>>
 class PersistenceError <<exception>>
+class "users.factory" as Factory <<module>> {
+  +create_user_repository(storage, database_path): UserRepository
+}
 API --> UserService
 API ..> InvalidCredentialsError : 422
 API ..> DuplicateUserError : 409
 API ..> PersistenceError : 503
 UserService --> Credentials
 UserService --> UserRepository
-Credentials ..> InvalidCredentialsError : lança
+UserService ..> UserRegistration : recebe
+UserService ..> NewUser : cria com hash
+Credentials ..> InvalidLoginError : lança
+Credentials ..> InvalidPasswordError : lança
+InvalidLoginError --|> InvalidCredentialsError
+InvalidPasswordError --|> InvalidCredentialsError
+Factory ..> MemoryUserRepository : cria
+Factory ..> SQLiteUserRepository : cria
 MemoryUserRepository ..|> UserRepository
 SQLiteUserRepository ..|> UserRepository
 MemoryUserRepository o-- "0..*" User
@@ -60,5 +88,9 @@ end note
 note bottom of UserRepository
   USER_STORAGE: memory (padrão) ou sqlite.
   Seleção no início da execução.
+end note
+note bottom of UserService
+  Repositório obrigatório por injeção.
+  Sem dependência de implementação concreta.
 end note
 @enduml

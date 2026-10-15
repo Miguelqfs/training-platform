@@ -1,21 +1,24 @@
 from app.users.credentials import hash_password, validate_credentials
-from app.users.domain import User, UserRole
-from app.users.repository import MemoryUserRepository, UserRepository
+from app.users.domain import NewUser, User, UserRegistration
+from app.users.repository import UserRepository
 
 
 class UserService:
-    def __init__(self, repository: UserRepository | None = None) -> None:
-        self._repository = (
-            repository if repository is not None else MemoryUserRepository()
-        )
+    def __init__(self, repository: UserRepository) -> None:
+        self._repository = repository
 
-    def add_user(
-        self, username: str, email: str, role: UserRole, password: str
-    ) -> User:
-        username = username.strip()
-        email = email.strip().lower()
-        validate_credentials(username, email, password)
-        return self._repository.add(username, email, role, hash_password(password))
+    def add_user(self, registration: UserRegistration) -> User:
+        username = registration.username.strip()
+        email = registration.email.strip().lower()
+        validate_credentials(username, email, registration.password)
+        return self._repository.add(
+            NewUser(
+                username=username,
+                email=email,
+                role=registration.role,
+                password_hash=hash_password(registration.password),
+            )
+        )
 
     def list_users(self) -> list[User]:
         return self._repository.list_users()

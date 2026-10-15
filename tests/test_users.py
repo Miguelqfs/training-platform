@@ -33,10 +33,13 @@ def test_add_and_list_users_with_both_roles(client: TestClient) -> None:
 
     assert student.status_code == 201
     assert admin.status_code == 201
-    assert client.get("/users/").json() == [
+    expected_users = [
         {"id": 1, "username": "maria", "email": "maria@example.com", "role": "student"},
         {"id": 2, "username": "ana", "email": "ana@example.com", "role": "admin"},
     ]
+    assert student.json() == expected_users[0]
+    assert admin.json() == expected_users[1]
+    assert client.get("/users/").json() == expected_users
 
 
 def test_rejects_duplicate_username_or_email_without_case_sensitivity(
@@ -74,20 +77,38 @@ def test_rejects_duplicate_username_or_email_without_case_sensitivity(
 
 
 @pytest.mark.parametrize(
-    "payload",
+    "payload,field",
     [
-        {"username": "   ", "password": "Abcdef12", "email": "maria@example.com"},
-        {"username": "maria", "password": "Abcdef12", "email": "not-an-email"},
-        {
-            "username": "maria",
-            "password": "Abcdef12",
-            "email": "maria@example.com",
-            "role": "trainer",
-        },
+        (
+            {"username": "   ", "password": "Abcdef12", "email": "maria@example.com"},
+            "username",
+        ),
+        (
+            {"username": "maria", "password": "Abcdef12", "email": "not-an-email"},
+            "email",
+        ),
+        (
+            {
+                "username": "maria",
+                "password": "Abcdef12",
+                "email": "maria@example.com",
+                "role": "trainer",
+            },
+            "role",
+        ),
     ],
 )
-def test_rejects_invalid_input(client: TestClient, payload: dict[str, str]) -> None:
-    assert client.post("/users/", json=payload).status_code == 422
+def test_rejects_invalid_input(
+    client: TestClient, payload: dict[str, str], field: str
+) -> None:
+    response = client.post("/users/", json=payload)
+    assert response.status_code == 422
+    error = response.json()["detail"][0]
+    assert error["loc"] == ["body", field]
+    assert error["type"]
+    assert error["msg"]
+    assert "input" not in error
+    assert "ctx" not in error
     assert client.get("/users/").json() == []
 
 
