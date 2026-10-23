@@ -28,7 +28,7 @@ integrarem e verificarem a implementação correspondente.
 - [x] 3.1 Detalhar UC01 e acrescentar UC03 e UC04; atualizar o diagrama geral distinguindo o que foi implementado do aplicativo e do agente já descritos na visão. Commit: `docs(casos-de-uso): detalhar usuários e treinos`
 - [x] 3.2 Acrescentar wireframes TL01–TL03 em `docs/06-interface/`. Commit: `docs(interface): propor wireframes dos casos detalhados`
 - [x] 3.3 Atualizar análise conceitual e conferir a correspondência entre diagrama real, imagem, tabela de padrões e ADR já presentes nos PRs de código. Commit: `docs(analise): representar os conceitos de treinos`
-- [ ] 3.4 Atualizar arquitetura lógica e física, a tabela dos RNFs, visão, glossário e README. Remeter `docs/07-arquitetura/` aos arquivos existentes, sem mover ADRs. Commit: `docs(arquitetura): relacionar requisitos e decisões da sprint 3`
+- [x] 3.4 Atualizar arquitetura lógica e física, a tabela dos RNFs, visão, glossário e README. Remeter `docs/07-arquitetura/` aos arquivos existentes, sem mover ADRs. Commit: `docs(arquitetura): relacionar requisitos e decisões da sprint 3`
 - [ ] 3.5 Acrescentar validação de documentação ao CI: parsing, tipos e conteúdo do YAML, OpenSpec e links locais, sem depender da existência de uma change específica. Fixar a versão da ferramenta, sem dependência de execução nova na API. Validar o job antes e depois do arquivamento. Commit: `chore(ci): validar configuração e especificações do projeto`
 - [ ] 3.6 Arquivar a change somente depois da implementação, dos testes e das validações finais, aplicando o delta em `openspec/specs/` sem perder requisitos inalterados. Revalidar as specs após arquivar. Commit: `docs(openspec): arquivar a change de treinos`
 

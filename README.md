@@ -1,6 +1,6 @@
 # Training Plataform
 
-Projeto da disciplina de Métodos de Projetos de Software. O produto pretende reunir o acompanhamento de treinos e, em etapas futuras, usar um agente de IA para ajudar o aluno a ajustar seus treinos. A Sprint 2 entrega cadastro com tratamento de erros e armazenamento em RAM ou SQLite. Os tipos de usuário são aluno (`student`) e administrador (`admin`). O treinador será um agente de IA em uma etapa futura.
+Projeto da disciplina de Métodos de Projetos de Software. O produto pretende reunir o acompanhamento de treinos e, em etapas futuras, usar um agente de IA para ajudar o aluno a ajustar seus treinos. A Sprint 3 entrega CRUD de planos de treino vinculados a usuários, fachada única com Singleton/Facade e contagem de entidades, preservando cadastro de usuários e armazenamento em RAM ou SQLite. Os tipos de usuário são aluno (`student`) e administrador (`admin`). O treinador será um agente de IA em uma etapa futura.
 
 ## Equipe
 
@@ -18,6 +18,8 @@ Projeto da disciplina de Métodos de Projetos de Software. O produto pretende re
 - [Glossário](docs/02-glossario.md)
 - [Elicitação e evidências](docs/03-elicitacao.md)
 - [Requisitos funcionais de usuários](openspec/specs/usuarios/spec.md)
+- [Requisitos de treinos](openspec/changes/crud-treinos/specs/treinos/spec.md) e [fachada](openspec/changes/crud-treinos/specs/fachada/spec.md)
+- [Interface proposta](docs/06-interface/README.md) e [arquitetura](docs/07-arquitetura/README.md)
 - [Requisitos não funcionais](openspec/specs/rnf/)
 - [Casos de uso](docs/04-casos-de-uso/README.md), [análise](docs/05-analise.md) e [projeto](docs/08-projeto.md)
 
@@ -38,7 +40,7 @@ A documentação interativa fica em `http://127.0.0.1:8000/docs`. Use `POST /use
 {"username": "maria", "email": "maria@example.com", "role": "student", "password": "Abcdef12"}
 ```
 
-O campo `role` é opcional e assume `student`. Em RAM, os usuários são perdidos quando a API reinicia. Ainda não há autenticação ou autorização; a API deve ser usada somente como protótipo local.
+O campo `role` é opcional e assume `student`. Em RAM, os usuários e treinos são perdidos quando a API reinicia. Ainda não há autenticação ou autorização; a API deve ser usada somente como protótipo local.
 
 ## Verificar
 
@@ -62,7 +64,7 @@ python -m ruff format .
 
 As regras da sprint estão em [docs/specs/usuarios.md](docs/specs/usuarios.md), os diagramas em [docs/diagramas/](docs/diagramas/), a estrutura planejada em [docs/arquitetura.md](docs/arquitetura.md) e a decisão da primeira sprint em [docs/adr/0001-usuarios-em-memoria.md](docs/adr/0001-usuarios-em-memoria.md).
 
-## Sprint 2
+## Regras de usuários preservadas da Sprint 2
 
 `username` representa o login: de 1 a 12 caracteres após remover espaços externos,
 sem números (incluindo números Unicode). A senha é obrigatória e segue a
@@ -87,3 +89,38 @@ Entradas inválidas retornam `422` e duplicidades retornam `409`.
 
 O cadastro agora exige `password`, alterando o contrato anterior. A decisão e
 as suposições estão no [ADR 0003](docs/adr/0003-validacao-persistencia.md).
+
+
+## Sprint 3
+
+Treino é um plano com nome e descrição ligado a um usuário existente. Não há
+exercícios, execução ou histórico. Nome: 1–100 caracteres; descrição: até 1.000;
+espaços externos são removidos. Nomes repetidos são permitidos. O ID do usuário
+é inteiro JSON positivo; campos desconhecidos são recusados.
+
+Depois de cadastrar o usuário, envie:
+
+```json
+{"user_id": 1, "name": "Peito", "description": "supino"}
+```
+
+| Operação | Endpoint | Sucesso | Erros |
+| --- | --- | --- | --- |
+| Cadastrar treino | POST /workouts/ | 201 | 422, 404 usuário, 503 |
+| Listar treinos | GET /workouts/ | 200, lista em ordem de ID | 503 |
+| Consultar treino | GET /workouts/{id} | 200 | 422, 404, 503 |
+| Atualizar treino | PUT /workouts/{id} | 200 | 422, 404, 503 |
+| Excluir treino | DELETE /workouts/{id} | 204 sem corpo | 422, 404, 503 |
+| Contar entidades | GET /statistics/entities | 200, `{"total": N}` | 503 |
+
+PUT aceita somente `name` e `description`; omitir descrição grava `""`.
+`id` e `user_id` no corpo são recusados mesmo sem mudança de valor. Exclusão
+repetida retorna 404. IDs confirmados de treinos não são reutilizados depois de
+exclusão. SQLite preserva usuários e treinos no mesmo arquivo já configurado,
+inclusive ao iniciar com um banco da Sprint 2.
+
+`FacadeSingletonController.get_instance().count_entities(context)` retorna um
+inteiro: usuários dos dois papéis + treinos. A fachada é única por processo e
+não guarda dados. Cada aplicação tem seu contexto; RAM e arquivos diferentes
+são independentes, enquanto o mesmo SQLite compartilha registros confirmados.
+Decisões: [ADR 0005](docs/adr/0005-treinos-fachada.md).
