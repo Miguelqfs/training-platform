@@ -124,3 +124,23 @@ inteiro: usuários dos dois papéis + treinos. A fachada é única por processo 
 não guarda dados. Cada aplicação tem seu contexto; RAM e arquivos diferentes
 são independentes, enquanto o mesmo SQLite compartilha registros confirmados.
 Decisões: [ADR 0005](docs/adr/0005-treinos-fachada.md).
+
+### Verificar a documentação
+
+Com Node.js 20.19 ou superior, instale as versões usadas pelo CI em um diretório
+temporário (sem dependências novas para executar a API):
+
+```bash
+npm install --prefix /tmp/training-platform-docs --no-save @fission-ai/openspec@1.14.3 yaml@2.8.2
+DOCS_TOOLS_DIR=/tmp/training-platform-docs/node_modules node scripts/check-docs.mjs
+```
+
+A verificação faz parsing e valida o conteúdo da configuração YAML, confere
+links locais e executa `openspec validate --all`. Também exige IDs únicos,
+prioridades e referências a casos de uso no formato da disciplina nas specs em
+vigor. Os testes desse verificador rodam no CI e podem ser executados com
+`node --test scripts/check-specs.test.mjs`. As especificações usam DEVE
+em português: o OpenSpec emite avisos por esperar SHALL/MUST. Dois avisos de
+texto longo já existem em RF03/NF-USA-01. Esses avisos são relatados; não se usa
+`--strict` para confundi-los com falhas nem se dispensa validação por causa deles.
+O script funciona também após o arquivamento da change.
