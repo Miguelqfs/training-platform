@@ -6,7 +6,7 @@ integrarem e verificarem a implementação correspondente.
 
 ## 1. Primeiro PR: domínio e persistência
 
-- [ ] 1.1 Registrar ADR 0005 antes ou junto da primeira alteração de contrato, incluindo interfaces, mensagens públicas, relacionamento, escopo do Singleton e decisões de isolamento. Commit: `docs(adr): registrar contratos e fachada da sprint 3`
+- [x] 1.1 Registrar ADR 0005 antes ou junto da primeira alteração de contrato, incluindo interfaces, mensagens públicas, relacionamento, escopo do Singleton e decisões de isolamento. Commit: `docs(adr): registrar contratos e fachada da sprint 3`
 - [ ] 1.2 Acrescentar `get_by_id` e `count` a `UserRepository` e `count_users` a `UserService`, com implementações RAM/SQLite e testes, inclusive o repositório substituto. Preservar cadastro e listagem. Commit: `feat(usuarios): consultar usuário por id e contar registros`
 - [ ] 1.3 Estender `PersistenceError` com mensagem pública padrão compatível com usuários, mantendo causa interna e aceitando somente mensagens públicas constantes nas chamadas novas. Incluir testes do contrato antes do primeiro uso nos repositórios de treinos. Commit: `refactor(erros): definir mensagens públicas de persistência`
 - [ ] 1.4 Criar constantes, DTOs congelados, exceções, protocolo e serviço de treinos. Incluir testes de normalização, tipos, limites, vínculo e contratos substitutos no mesmo commit. Commit: `feat(treinos): adicionar domínio e serviço de treinos`
