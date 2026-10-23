@@ -22,3 +22,6 @@ class UserService:
 
     def list_users(self) -> list[User]:
         return self._repository.list_users()
+
+    def count_users(self) -> int:
+        return self._repository.count()

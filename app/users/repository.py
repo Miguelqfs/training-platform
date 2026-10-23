@@ -1,9 +1,9 @@
 import sqlite3
-from contextlib import closing
 from pathlib import Path
 from threading import Lock
 from typing import Protocol
 
+from app.storage import sqlite_connection
 from app.users.domain import (
     DuplicateUserError,
     NewUser,
@@ -16,6 +16,8 @@ from app.users.domain import (
 class UserRepository(Protocol):
     def add(self, data: NewUser) -> User: ...
     def list_users(self) -> list[User]: ...
+    def get_by_id(self, user_id: int) -> User | None: ...
+    def count(self) -> int: ...
 
 
 class MemoryUserRepository:
@@ -45,12 +47,20 @@ class MemoryUserRepository:
         with self._lock:
             return list(self._users)
 
+    def get_by_id(self, user_id: int) -> User | None:
+        with self._lock:
+            return next((user for user in self._users if user.id == user_id), None)
+
+    def count(self) -> int:
+        with self._lock:
+            return len(self._users)
+
 
 class SQLiteUserRepository:
     def __init__(self, path: Path) -> None:
         self._path = path
         try:
-            with closing(sqlite3.connect(self._path)) as connection, connection:
+            with sqlite_connection(self._path) as connection:
                 connection.execute("""CREATE TABLE IF NOT EXISTS users (
                     id INTEGER PRIMARY KEY,
                     username TEXT NOT NULL,
@@ -67,7 +77,7 @@ class SQLiteUserRepository:
 
     def add(self, data: NewUser) -> User:
         try:
-            with closing(sqlite3.connect(self._path)) as connection, connection:
+            with sqlite_connection(self._path) as connection:
                 cursor = connection.execute(
                     "INSERT INTO users (username, username_key, email, email_key, role, password_hash) VALUES (?, ?, ?, ?, ?, ?)",
                     (
@@ -99,7 +109,7 @@ class SQLiteUserRepository:
 
     def list_users(self) -> list[User]:
         try:
-            with closing(sqlite3.connect(self._path)) as connection:
+            with sqlite_connection(self._path) as connection:
                 rows = connection.execute(
                     "SELECT id, username, email, role, password_hash FROM users ORDER BY id"
                 ).fetchall()
@@ -109,3 +119,24 @@ class SQLiteUserRepository:
             ]
         except sqlite3.Error as error:
             raise PersistenceError("Não foi possível listar os usuários") from error
+
+    def get_by_id(self, user_id: int) -> User | None:
+        try:
+            with sqlite_connection(self._path) as connection:
+                # Texto decimal evita overflow do driver para IDs positivos muito grandes.
+                row = connection.execute(
+                    "SELECT id, username, email, role, password_hash FROM users WHERE id = ?",
+                    (str(user_id),),
+                ).fetchone()
+            if row is None:
+                return None
+            return User(row[0], row[1], row[2], UserRole(row[3]), row[4])
+        except sqlite3.Error as error:
+            raise PersistenceError("Não foi possível consultar o usuário") from error
+
+    def count(self) -> int:
+        try:
+            with sqlite_connection(self._path) as connection:
+                return connection.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+        except sqlite3.Error as error:
+            raise PersistenceError("Não foi possível contar os usuários") from error

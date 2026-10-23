@@ -9,6 +9,7 @@ class UserService <<control>> {
   +UserService(repository: UserRepository)
   +add_user(registration: UserRegistration): User
   +list_users(): User[]
+  +count_users(): int
 }
 class "Validação de credenciais" as Credentials {
   +validate_credentials(login, email, senha)
@@ -42,6 +43,8 @@ enum UserRole {
 interface UserRepository {
   +add(data: NewUser): User
   +list_users(): User[]
+  +get_by_id(user_id): User | None
+  +count(): int
 }
 class MemoryUserRepository {
   -users: User[]
@@ -92,5 +95,56 @@ end note
 note bottom of UserService
   Repositório obrigatório por injeção.
   Sem dependência de implementação concreta.
+end note
+
+class WorkoutService <<control>> {
+  +create_workout(registration): Workout
+  +get_workout(id): Workout
+  +list_workouts(): Workout[]
+  +update_workout(id, update): Workout
+  +delete_workout(id): None
+  +count_workouts(): int
+}
+class Workout <<frozen>> {
+  +id: int
+  +user_id: int
+  +name: str
+  +description: str
+}
+class WorkoutRegistration <<frozen DTO>>
+class WorkoutUpdate <<frozen DTO>>
+interface WorkoutRepository {
+  +add(data): Workout
+  +get_by_id(id): Workout | None
+  +list_workouts(): Workout[]
+  +update(id, data): Workout | None
+  +delete(id): bool
+  +count(): int
+}
+class MemoryWorkoutRepository {
+  -next_id: int
+  -lock: Lock
+}
+class SQLiteWorkoutRepository {
+  -path: Path
+}
+class InvalidWorkoutError <<exception>>
+class UserNotFoundError <<exception>>
+class WorkoutNotFoundError <<exception>>
+WorkoutService --> UserRepository : verifica vínculo
+WorkoutService --> WorkoutRepository
+WorkoutService ..> WorkoutRegistration
+WorkoutService ..> WorkoutUpdate
+WorkoutService ..> InvalidWorkoutError
+WorkoutService ..> UserNotFoundError
+WorkoutService ..> WorkoutNotFoundError
+MemoryWorkoutRepository ..|> WorkoutRepository
+SQLiteWorkoutRepository ..|> WorkoutRepository
+SQLiteWorkoutRepository ..> PersistenceError
+SQLiteWorkoutRepository ..> UserNotFoundError : FK
+User "1" -- "0..*" Workout : user_id
+note bottom of WorkoutService
+  Domínio e persistência disponíveis em Python.
+  Rotas de treino e fachada entram no próximo PR.
 end note
 @enduml

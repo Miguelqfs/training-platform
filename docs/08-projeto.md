@@ -33,3 +33,16 @@ credenciais; cada mensagem identifica a regra violada.
 | `UserService` | Coordena regras de negócio de usuários. | Implementado para o núcleo da Entrega 1. |
 
 A introdução de padrões pedidos nas sprints seguintes será documentada quando cada mudança for proposta e implementada.
+
+
+## Persistência de treinos — primeira etapa da Sprint 3
+
+O [ADR 0005](adr/0005-treinos-fachada.md) registra os contratos novos antes de
+sua implementação. `WorkoutService` recebe `WorkoutRepository` e
+`UserRepository`; as implementações de treino em RAM e SQLite oferecem CRUD,
+ordenação, IDs monotônicos e contagem. SQLite usa o mesmo arquivo e FK ativa
+por conexão, sem apagar usuários. `app/storage.py` delimita as transações.
+
+Esta etapa oferece o serviço em Python. As rotas de treinos e a fachada serão
+integradas no próximo PR; o diagrama atual ainda não as representa como código
+implementado. As rotas existentes de usuários permanecem funcionais.
