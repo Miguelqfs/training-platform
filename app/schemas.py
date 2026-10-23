@@ -21,3 +21,17 @@ class UserCreate(UserFields):
 
 class User(UserFields):
     id: int
+
+
+class ErrorMessage(BaseModel):
+    detail: str
+
+
+class FieldValidationError(BaseModel):
+    loc: list[str | int]
+    msg: str
+    type: str
+
+
+class ValidationErrorResponse(BaseModel):
+    detail: str | list[FieldValidationError]
