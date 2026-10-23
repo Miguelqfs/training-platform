@@ -12,7 +12,7 @@ integrarem e verificarem a implementação correspondente.
 - [x] 1.4 Criar constantes, DTOs congelados, exceções, protocolo e serviço de treinos. Incluir testes de normalização, tipos, limites, vínculo e contratos substitutos no mesmo commit. Commit: `feat(treinos): adicionar domínio e serviço de treinos`
 - [x] 1.5 Implementar RAM com coleção própria, trava e IDs monotônicos. Incluir testes de CRUD, ordenação, exclusão do maior ID, concorrência e contagem. Commit: `feat(treinos): armazenar treinos em memória`
 - [x] 1.6 Implementar SQLite com FK, pragma em cada conexão, transações e `AUTOINCREMENT`. Incluir testes de todas as operações, banco legado, reinício completo, exclusão persistida, falhas de leitura e rollback de INSERT/UPDATE/DELETE. Commit: `feat(treinos): armazenar treinos em sqlite`
-- [ ] 1.7 Atualizar responsabilidades dos módulos e o diagrama de projeto para o código deste PR, sem desenhar a fachada como implementada antes dela existir. Commit: `docs(projeto): representar a persistência de treinos`
+- [x] 1.7 Atualizar responsabilidades dos módulos e o diagrama de projeto para o código deste PR, sem desenhar a fachada como implementada antes dela existir. Commit: `docs(projeto): representar a persistência de treinos`
 
 ## 2. Segundo PR: fachada, rotas e contagem
 
