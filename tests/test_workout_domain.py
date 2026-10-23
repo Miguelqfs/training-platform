@@ -1,10 +1,12 @@
+import sqlite3
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import FrozenInstanceError
 
 import pytest
 
+from app.storage import sqlite_connection
 from app.users.domain import NewUser, PersistenceError, UserRole
-from app.users.repository import MemoryUserRepository
+from app.users.repository import MemoryUserRepository, SQLiteUserRepository
 from app.workouts.domain import (
     InvalidWorkoutError,
     UserNotFoundError,
@@ -13,13 +15,24 @@ from app.workouts.domain import (
     WorkoutRegistration,
     WorkoutUpdate,
 )
-from app.workouts.repository import MemoryWorkoutRepository
+from app.workouts.repository import MemoryWorkoutRepository, SQLiteWorkoutRepository
 from app.workouts.service import WorkoutService
 
 
-@pytest.fixture
-def repositories():
-    return MemoryUserRepository(), MemoryWorkoutRepository()
+@pytest.fixture(params=["memory", "sqlite"])
+def repositories(request, tmp_path):
+    path = tmp_path / "domain.db"
+    users = (
+        MemoryUserRepository()
+        if request.param == "memory"
+        else SQLiteUserRepository(path)
+    )
+    workouts = (
+        MemoryWorkoutRepository()
+        if request.param == "memory"
+        else SQLiteWorkoutRepository(path)
+    )
+    return users, workouts
 
 
 def test_workout_repository_contract(repositories):
@@ -122,6 +135,30 @@ def test_memory_concurrent_ids_never_collide_or_reuse_deleted_highest():
     assert repository.delete(1)
     assert repository.add(WorkoutRegistration(1, "Novo")).id == 101
     assert repository.count() == 99
+
+
+def test_foreign_keys_on_each_connection_and_only_fk_is_missing_user(tmp_path):
+    path = tmp_path / "foreign.db"
+    users = SQLiteUserRepository(path)
+    workouts = SQLiteWorkoutRepository(path)
+    for _ in range(2):
+        with sqlite_connection(path) as connection:
+            assert connection.execute("PRAGMA foreign_keys").fetchone() == (1,)
+    with pytest.raises(UserNotFoundError):
+        workouts.add(WorkoutRegistration(999, "Órfão"))
+    users.add(NewUser("maria", "maria@example.com", UserRole.STUDENT, "hash"))
+    with pytest.raises(PersistenceError) as caught:
+        workouts.add(WorkoutRegistration(1, None))
+    assert isinstance(caught.value.__cause__, sqlite3.IntegrityError)
+    assert caught.value.public_message == PersistenceError.WORKOUT_MESSAGE
+    assert workouts.count() == 0
+
+
+def test_workout_initialization_failure_is_safe(tmp_path):
+    with pytest.raises(PersistenceError) as caught:
+        SQLiteWorkoutRepository(tmp_path / "missing" / "db.sqlite")
+    assert caught.value.public_message == PersistenceError.WORKOUT_MESSAGE
+    assert isinstance(caught.value.__cause__, sqlite3.Error)
 
 
 def test_service_accepts_independent_contracts_without_inheritance():

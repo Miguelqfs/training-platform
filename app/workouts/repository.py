@@ -1,8 +1,13 @@
+import sqlite3
 from dataclasses import replace
+from pathlib import Path
 from threading import Lock
 from typing import Protocol
 
+from app.storage import sqlite_connection
+from app.users.domain import PersistenceError
 from app.workouts.domain import (
+    UserNotFoundError,
     Workout,
     WorkoutRegistration,
     WorkoutUpdate,
@@ -55,3 +60,102 @@ class MemoryWorkoutRepository:
     def count(self) -> int:
         with self._lock:
             return len(self._workouts)
+
+
+def storage_failure() -> PersistenceError:
+    return PersistenceError(
+        "Não foi possível acessar os treinos",
+        public_message=PersistenceError.WORKOUT_MESSAGE,
+    )
+
+
+class SQLiteWorkoutRepository:
+    def __init__(self, path: Path) -> None:
+        self._path = path
+        try:
+            with sqlite_connection(self._path) as connection:
+                connection.execute("""CREATE TABLE IF NOT EXISTS workouts (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    name TEXT NOT NULL,
+                    description TEXT NOT NULL DEFAULT '',
+                    FOREIGN KEY (user_id) REFERENCES users (id)
+                )""")
+        except sqlite3.Error as error:
+            raise storage_failure() from error
+
+    def add(self, data: WorkoutRegistration) -> Workout:
+        try:
+            with sqlite_connection(self._path) as connection:
+                # Afinidade INTEGER do SQLite preserva IDs sem overflow do binding Python.
+                cursor = connection.execute(
+                    "INSERT INTO workouts (user_id, name, description) VALUES (?, ?, ?)",
+                    (str(data.user_id), data.name, data.description),
+                )
+                assert cursor.lastrowid is not None
+                return Workout(
+                    cursor.lastrowid, data.user_id, data.name, data.description
+                )
+        except sqlite3.IntegrityError as error:
+            if error.sqlite_errorcode == sqlite3.SQLITE_CONSTRAINT_FOREIGNKEY:
+                raise UserNotFoundError() from error
+            raise storage_failure() from error
+        except sqlite3.Error as error:
+            raise storage_failure() from error
+
+    def get_by_id(self, workout_id: int) -> Workout | None:
+        try:
+            with sqlite_connection(self._path) as connection:
+                row = connection.execute(
+                    "SELECT id, user_id, name, description FROM workouts WHERE id = ?",
+                    (str(workout_id),),
+                ).fetchone()
+            return Workout(*row) if row is not None else None
+        except sqlite3.Error as error:
+            raise storage_failure() from error
+
+    def list_workouts(self) -> list[Workout]:
+        try:
+            with sqlite_connection(self._path) as connection:
+                rows = connection.execute(
+                    "SELECT id, user_id, name, description FROM workouts ORDER BY id"
+                ).fetchall()
+            return [Workout(*row) for row in rows]
+        except sqlite3.Error as error:
+            raise storage_failure() from error
+
+    def update(self, workout_id: int, data: WorkoutUpdate) -> Workout | None:
+        try:
+            with sqlite_connection(self._path) as connection:
+                cursor = connection.execute(
+                    "UPDATE workouts SET name = ?, description = ? WHERE id = ?",
+                    (data.name, data.description, str(workout_id)),
+                )
+                if cursor.rowcount == 0:
+                    return None
+                row = connection.execute(
+                    "SELECT id, user_id, name, description FROM workouts WHERE id = ?",
+                    (str(workout_id),),
+                ).fetchone()
+                return Workout(*row)
+        except sqlite3.Error as error:
+            raise storage_failure() from error
+
+    def delete(self, workout_id: int) -> bool:
+        try:
+            with sqlite_connection(self._path) as connection:
+                return (
+                    connection.execute(
+                        "DELETE FROM workouts WHERE id = ?", (str(workout_id),)
+                    ).rowcount
+                    > 0
+                )
+        except sqlite3.Error as error:
+            raise storage_failure() from error
+
+    def count(self) -> int:
+        try:
+            with sqlite_connection(self._path) as connection:
+                return connection.execute("SELECT COUNT(*) FROM workouts").fetchone()[0]
+        except sqlite3.Error as error:
+            raise storage_failure() from error
