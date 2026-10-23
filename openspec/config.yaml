@@ -1,0 +1,28 @@
+schema: spec-driven
+
+context: |
+  Escreva todos os artefatos em português do Brasil.
+  Sistema: Training Plataform — acompanhamento de treinos de alunos.
+  A visão, o escopo e as restrições estão em docs/01-visao.md.
+  Os termos do domínio estão em docs/02-glossario.md.
+  Os requisitos em vigor estão em openspec/specs/.
+  A API atual é Python 3.12, FastAPI e Pydantic, com usuários e treinos em RAM ou no mesmo arquivo SQLite.
+  A Sprint 3 usa FacadeSingletonController, contexto próprio por aplicação e contagem de usuários + treinos.
+  Código em inglês; documentação e mensagens de domínio em português.
+  ADRs ficam em docs/adr/. Não use o exemplo ReservaCI como requisito deste sistema.
+
+rules:
+  specs:
+    - Cabeçalho do requisito no formato "RFnn — Título" ou "NF-CAT-nn — Título"
+    - IDs nunca são reaproveitados nem renumerados
+    - O texto do requisito usa "O sistema DEVE ..." ou "NÃO DEVE"
+    - 'Metadados logo após o texto: **Prioridade:** e **Caso de uso:** ou **Casos de uso:**'
+    - Todo requisito tem pelo menos um cenário com GIVEN, WHEN e THEN
+    - Requisitos não funcionais têm critério mensurável no THEN
+  proposal:
+    - Sempre declare o que fica fora do escopo da mudança
+    - Diferencie requisito da disciplina, decisão já aceita e proposta ainda não aprovada
+  design:
+    - Toda decisão relevante de arquitetura vira um ADR em docs/adr/ junto ao primeiro PR que altera o contrato correspondente
+  tasks:
+    - Cada tarefa cabe em um commit; use Conventional Commits em português, no imperativo
