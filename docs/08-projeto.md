@@ -24,8 +24,8 @@
 arquivo foi preservado; o conteúdo representa as classes atuais. Os DTOs têm
 seus atributos omitidos nesta visão para manter a leitura. Os contratos completos ficam no
 [ADR 0005](adr/0005-treinos-fachada.md) e nas especificações de
-[treinos](../openspec/changes/crud-treinos/specs/treinos/spec.md) e
-[fachada](../openspec/changes/crud-treinos/specs/fachada/spec.md).
+[treinos](../openspec/specs/treinos/spec.md) e
+[fachada](../openspec/specs/fachada/spec.md).
 
 ### Validação e tratamento de exceções
 

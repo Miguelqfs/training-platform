@@ -1,10 +1,9 @@
 # Proposta: crud-treinos
 
-**Estado: proposta para revisão e integração em develop.** O escopo foi
-revisado com a equipe e a implementação já foi preparada e validada localmente.
-Este PR contém somente a proposta; código, testes novos e requisitos em vigor
-serão integrados nos PRs seguintes, após sua revisão. O arquivamento é a última
-etapa da implementação, e não faz parte deste PR.
+**Estado: implementado e arquivado em 23/10/2026.** A proposta foi integrada
+pelo PR #11, a persistência pelo PR #12 e a fachada/API pelo PR #13. Este PR
+conclui a documentação e o histórico da change. A release depende da validação
+integrada e do PR de develop para main.
 
 ## Why
 

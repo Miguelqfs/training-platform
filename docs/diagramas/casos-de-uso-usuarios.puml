@@ -1,20 +1,41 @@
 @startuml
+!pragma layout smetana
 left to right direction
+skinparam packageStyle rectangle
+skinparam defaultFontSize 14
 actor Aluno
 actor Administrador
+actor "Treinador IA\n(componente futuro)" as IA
 
-rectangle "Gerenciamento de usuários" {
-  usecase "Cadastrar usuário" as cadastrar
-  usecase "Listar todos os usuários" as listar
+rectangle "Training Platform — implementado na Sprint 3" {
+  usecase "UC01\nCadastrar usuário" as UC01
+  usecase "UC02\nListar usuários" as UC02
+  usecase "UC03\nCadastrar treino" as UC03
+  usecase "UC04\nAtualizar treino" as UC04
+  usecase "UC05\nConsultar treino" as UC05
+  usecase "UC06\nListar treinos" as UC06
+  usecase "UC07\nExcluir treino" as UC07
+  usecase "UC08\nContar entidades" as UC08
 }
-
-Aluno --> cadastrar
-Administrador --> cadastrar
-Administrador --> listar
-
-note right of listar
-  Autenticação e autorização são futuras.
-  A Sprint 1 implementa a operação sem
-  verificar o papel de quem a solicita.
+rectangle "Planejado na visão — não implementado" #EEEEEE {
+  usecase "Acompanhar treinos\nno aplicativo mobile" as FutureApp
+  usecase "Conversar sobre adaptações\nda rotina com o agente" as FutureIA
+}
+Administrador --> UC01
+Administrador --> UC02
+Administrador --> UC08
+Aluno --> UC03
+Aluno --> UC04
+Aluno --> UC05
+Aluno --> UC06
+Aluno --> UC07
+Aluno ..> FutureApp
+Aluno ..> FutureIA
+IA ..> FutureIA
+note bottom of UC08
+  Contagem deriva do enunciado da Sprint 3.
+  Atores indicam uso pretendido, sem permissões:
+  a API não autentica nem autoriza por papel.
+  Administrador também pode operar treinos.
 end note
 @enduml

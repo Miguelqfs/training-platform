@@ -13,6 +13,7 @@ O [glossário](02-glossario.md) define os termos do produto; a [elicitação](03
 ### 1.3 Documentos relacionados
 
 - [Especificação atual de usuários](specs/usuarios.md).
+- [Treinos e fachada da Sprint 3](specs/treinos.md).
 - [Arquitetura proposta](arquitetura.md).
 - [Decisão de validação e persistência](adr/0003-validacao-persistencia.md).
 - [Modelo de documentação da disciplina](https://github.com/rkulesza/mps-modelo).
@@ -35,15 +36,15 @@ Esses problemas foram relatados pelo idealizador e por uma pessoa entrevistada p
 
 ### 2.3 Visão geral e escopo
 
-O produto planejado deverá permitir que alunos acompanhem seus treinos em um lugar e recebam auxílio de um agente de IA para adaptar a rotina conforme dias disponíveis para treinar e limitações físicas informadas pelo aluno. A entrevista também apontou interesse em conversar sobre o treino e entender as adaptações; o comportamento exato do agente será detalhado em sprints futuras. Administradores operarão a plataforma e, segundo a intenção atual do grupo, realizarão o cadastro e a listagem de usuários. O cadastro e a listagem são o núcleo implementado nas Sprints 1 e 2, mas a API ainda não controla quem pode executá-los. Funcionalidades de treino, aplicativo mobile e agente de IA ainda não funcionam nesta versão.
+O produto planejado deverá permitir que alunos acompanhem seus treinos em um lugar e recebam auxílio de um agente de IA para adaptar a rotina conforme dias disponíveis para treinar e limitações físicas informadas pelo aluno. A entrevista também apontou interesse em conversar sobre o treino e entender as adaptações; o comportamento exato do agente será detalhado em sprints futuras. Administradores operarão a plataforma e, segundo a intenção atual do grupo, realizarão o cadastro e a listagem de usuários. O cadastro e a listagem são o núcleo implementado nas Sprints 1 e 2, mas a API ainda não controla quem pode executá-los. A Sprint 3 acrescenta planos de treino vinculados a usuários, com cadastro, consulta, listagem, atualização, exclusão e contagem de usuários + treinos. Nome, descrição, limites e interpretação da contagem são decisões do projeto registradas no ADR 0005, não resultados da entrevista. Aplicativo mobile, exercícios, execução, histórico e agente de IA permanecem futuros.
 
-**Fora do escopo inicial:** coleta de dados pessoais sem relação com o treino e funcionalidades de treino ou IA nesta versão da API. Nenhuma outra integração externa foi definida para o ciclo inicial; novas integrações serão decididas nas próximas sprints.
+**Fora do escopo inicial:** coleta de dados pessoais sem relação com o treino e funcionalidades de exercícios, execução de treinos ou IA nesta versão da API. Nenhuma outra integração externa foi definida para o ciclo inicial; novas integrações serão decididas nas próximas sprints.
 
 ### 2.4 Usuários e papéis
 
 | Papel | Necessidade | Situação atual |
 | --- | --- | --- |
-| Aluno | Consultar e acompanhar seus treinos; futuramente interagir com o treinador IA. | Pode ser cadastrado com papel `student`; acompanhamento de treinos ainda não foi implementado. |
+| Aluno | Consultar e acompanhar seus treinos; futuramente interagir com o treinador IA. | Pode ser cadastrado com papel `student`; planos vinculados ao seu ID podem ser cadastrados e gerenciados na API; execução e histórico são futuros. |
 | Administrador | Operar a plataforma e, na proposta atual, cadastrar e listar usuários. | Pode ser cadastrado com papel `admin`; autorização por papel ainda não foi implementada. |
 | Treinador IA | Auxiliar o trabalho com treinos. | Componente futuro do sistema, não é um tipo de usuário cadastrado. |
 
