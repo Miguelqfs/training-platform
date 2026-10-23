@@ -4,6 +4,7 @@ from fastapi import FastAPI
 
 from app.error_handlers import register_error_handlers
 from app.facade import ApplicationContext
+from app.routers.statistics import router as statistics_router
 from app.routers.users import router as users_router
 from app.routers.workouts import router as workouts_router
 from app.users.factory import resolve_storage
@@ -34,6 +35,7 @@ def create_app(
     register_error_handlers(app)
     app.include_router(users_router)
     app.include_router(workouts_router)
+    app.include_router(statistics_router)
     return app
 
 

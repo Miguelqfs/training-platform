@@ -239,6 +239,25 @@ def test_link_lookup_failure_preserves_cause_and_uses_workout_message(monkeypatc
     assert caught.value.public_message == PersistenceError.WORKOUT_MESSAGE
 
 
+@pytest.mark.parametrize("storage", ["memory", "sqlite"])
+def test_arbitrarily_large_ids_are_absent_not_driver_failures(storage, tmp_path):
+    from fastapi.testclient import TestClient
+
+    from app.main import create_app
+
+    huge = 10**100
+    with TestClient(
+        create_app(storage=storage, database_path=tmp_path / "huge.db")
+    ) as client:
+        response = client.post("/workouts/", json={"user_id": huge, "name": "Plano"})
+        assert response.status_code == 404
+        for method in ("get", "put", "delete"):
+            kwargs = {"json": {"name": "Novo"}} if method == "put" else {}
+            response = client.request(method, f"/workouts/{huge}", **kwargs)
+            assert response.status_code == 404
+        assert client.get("/statistics/entities").json() == {"total": 0}
+
+
 def test_ids_remain_monotonic_after_deleting_entire_collection(repositories):
     users, workouts = repositories
     user = users.add(NewUser("maria", "maria@example.com", UserRole.STUDENT, "hash"))
