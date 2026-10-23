@@ -1,3 +1,5 @@
+import sqlite3
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -202,6 +204,143 @@ def test_missing_records_are_404_without_mutation(populated):
         assert response.status_code == 404
         assert response.json() == {"detail": "Treino não encontrado"}
     assert populated.get("/statistics/entities").json() == {"total": 1}
+
+
+def test_sqlite_restart_preserves_legacy_users_and_complete_workouts(tmp_path):
+    from app.users.domain import NewUser, UserRole
+    from app.users.repository import SQLiteUserRepository
+
+    database = tmp_path / "legacy.db"
+    repository = SQLiteUserRepository(database)
+    legacy = repository.add(
+        NewUser("maria", "maria@example.com", UserRole.STUDENT, "legacy-hash")
+    )
+    with TestClient(create_app(storage="sqlite", database_path=database)) as client:
+        assert client.get("/workouts/").json() == []
+        assert client.get("/users/").json()[0]["id"] == legacy.id
+        first = client.post(
+            "/workouts/",
+            json={"user_id": legacy.id, "name": "Plano", "description": "Completo"},
+        ).json()
+        deleted = client.post(
+            "/workouts/", json={"user_id": legacy.id, "name": "Excluir"}
+        ).json()
+        assert client.delete(f"/workouts/{deleted['id']}").status_code == 204
+    with TestClient(create_app(storage="sqlite", database_path=database)) as client:
+        assert client.get("/workouts/").json() == [first]
+        assert client.get("/statistics/entities").json() == {"total": 2}
+        assert client.get(f"/workouts/{deleted['id']}").status_code == 404
+        created = client.post(
+            "/workouts/", json={"user_id": legacy.id, "name": "Plano"}
+        ).json()
+        assert created["id"] > deleted["id"]
+    assert repository.get_by_id(legacy.id) == legacy
+
+
+def test_missing_workout_table_is_503_for_every_operation(tmp_path):
+    database = tmp_path / "fault.db"
+    with TestClient(create_app(storage="sqlite", database_path=database)) as client:
+        assert client.post("/users/", json=USER).status_code == 201
+        with sqlite3.connect(database) as connection:
+            connection.execute("DROP TABLE workouts")
+        requests = [
+            ("post", "/workouts/", {"user_id": 1, "name": "Plano"}),
+            ("get", "/workouts/", None),
+            ("get", "/workouts/1", None),
+            ("put", "/workouts/1", {"name": "Novo"}),
+            ("delete", "/workouts/1", None),
+            ("get", "/statistics/entities", None),
+        ]
+        for method, url, body in requests:
+            response = client.request(method, url, **({"json": body} if body else {}))
+            assert response.status_code == 503
+            assert response.json() == {
+                "detail": "Armazenamento de treinos indisponível"
+            }
+        assert client.get("/users/").status_code == 200
+
+
+def test_missing_user_table_has_contextual_public_error(tmp_path):
+    database = tmp_path / "fault.db"
+    with TestClient(create_app(storage="sqlite", database_path=database)) as client:
+        with sqlite3.connect(database) as connection:
+            connection.execute("DROP TABLE users")
+        response = client.post("/workouts/", json={"user_id": 1, "name": "Plano"})
+        assert response.status_code == 503
+        assert response.json() == {"detail": "Armazenamento de treinos indisponível"}
+        for url in ("/users/", "/statistics/entities"):
+            response = client.get(url)
+            assert response.status_code == 503
+            assert response.json() == {
+                "detail": "Armazenamento de usuários indisponível"
+            }
+
+
+@pytest.mark.parametrize("operation", ["INSERT", "UPDATE", "DELETE"])
+@pytest.mark.parametrize("failure", ["ABORT", "FAIL"])
+def test_failed_sqlite_mutations_roll_back_complete_state_and_recover(
+    tmp_path, operation, failure
+):
+    database = tmp_path / "rollback.db"
+    with TestClient(create_app(storage="sqlite", database_path=database)) as client:
+        client.post("/users/", json=USER)
+        client.post(
+            "/workouts/",
+            json={"user_id": 1, "name": "Anterior", "description": "Preservada"},
+        )
+        client.post(
+            "/workouts/",
+            json={"user_id": 1, "name": "Intacto", "description": "Outro treino"},
+        )
+        before = client.get("/workouts/").json()
+        users = client.get("/users/").json()
+        with sqlite3.connect(database) as connection:
+            rows = connection.execute("SELECT * FROM workouts ORDER BY id").fetchall()
+            connection.execute(
+                f"CREATE TRIGGER fail_write AFTER {operation} ON workouts BEGIN SELECT RAISE({failure}, 'private database failure'); END"
+            )
+
+        def mutate():
+            if operation == "INSERT":
+                return client.post(
+                    "/workouts/",
+                    json={"user_id": 1, "name": "Novo", "description": "Outra"},
+                )
+            if operation == "UPDATE":
+                return client.put(
+                    "/workouts/1", json={"name": "Novo", "description": "Outra"}
+                )
+            return client.delete("/workouts/1")
+
+        response = mutate()
+        assert response.status_code == 503
+        assert response.json() == {"detail": "Armazenamento de treinos indisponível"}
+        assert client.get("/workouts/").json() == before
+        assert client.get("/users/").json() == users
+        assert client.get("/statistics/entities").json() == {"total": 3}
+        with sqlite3.connect(database) as connection:
+            assert (
+                connection.execute("SELECT * FROM workouts ORDER BY id").fetchall()
+                == rows
+            )
+            connection.execute("DROP TRIGGER fail_write")
+        assert (
+            mutate().status_code
+            == {"INSERT": 201, "UPDATE": 200, "DELETE": 204}[operation]
+        )
+        after = client.get("/workouts/").json()
+        if operation == "INSERT":
+            assert after == before + [
+                dict(id=3, user_id=1, name="Novo", description="Outra")
+            ]
+        elif operation == "UPDATE":
+            assert after == [
+                dict(id=1, user_id=1, name="Novo", description="Outra"),
+                before[1],
+            ]
+        else:
+            assert after == [before[1]]
+        assert client.get("/statistics/entities").json() == {"total": 1 + len(after)}
 
 
 def test_openapi_describes_positive_ids_and_nonnegative_total(client):
