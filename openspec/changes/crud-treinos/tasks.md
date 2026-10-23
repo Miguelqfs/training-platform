@@ -16,7 +16,7 @@ integrarem e verificarem a implementação correspondente.
 
 ## 2. Segundo PR: fachada, rotas e contagem
 
-- [ ] 2.1 Adicionar contexto e fachada sem estado global de negócio. Testar identidade via construtor e accessor, inclusive a primeira criação concorrente em processo novo, e operações delegadas aos contextos corretos. Commit: `feat(fachada): adicionar fachada única por processo`
+- [x] 2.1 Adicionar contexto e fachada sem estado global de negócio. Testar identidade via construtor e accessor, inclusive a primeira criação concorrente em processo novo, e operações delegadas aos contextos corretos. Commit: `feat(fachada): adicionar fachada única por processo`
 - [ ] 2.2 Fazer `create_app` resolver a configuração uma vez e compor os repositórios/serviços do contexto, sem reiniciar a fachada. Testar precedência dos argumentos, RAM independente, SQLite em arquivos diferentes e duas aplicações ativas no mesmo arquivo. Commit: `refactor(app): compor usuários e treinos no contexto`
 - [ ] 2.3 Adicionar esquemas, rotas e tratadores HTTP juntos aos testes de cada operação; passar também as rotas de usuários pela fachada. Cobrir campos desconhecidos/imutáveis, tipos estritos no JSON, PUT com substituição e conversão normal de ID na URL. Commit: `feat(api): expor crud de treinos pela fachada`
 - [ ] 2.4 Completar testes de indisponibilidade de todas as operações HTTP e de rollback nas três mutações, preservando a mensagem de usuários. Cobrir falha da busca do usuário durante cadastro de treino, sem falso 404. Commit: `test(api): verificar indisponibilidade e atomicidade de treinos`
