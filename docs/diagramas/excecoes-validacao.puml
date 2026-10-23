@@ -1,0 +1,60 @@
+@startuml
+!pragma layout smetana
+skinparam classAttributeIconSize 0
+hide empty members
+
+title Sprint 3 — validação e tradução das exceções
+
+package "Usuários" {
+  class "users.credentials" as Credentials <<module>>
+  class UserService
+  class MemoryUserRepository
+  class SQLiteUserRepository
+  class InvalidCredentialsError <<exception>>
+  class InvalidLoginError <<exception>>
+  class InvalidPasswordError <<exception>>
+  class DuplicateUserError <<exception>>
+  class PersistenceError <<exception>> {
+    +public_message: str
+  }
+}
+package "Treinos" {
+  class WorkoutService
+  class SQLiteWorkoutRepository
+  class InvalidWorkoutError <<exception>>
+  class UserNotFoundError <<exception>>
+  class WorkoutNotFoundError <<exception>>
+}
+package "Fronteira HTTP" {
+  class "error_handlers" as Handlers <<module>>
+  class "routers.users" as UserRoutes <<module>>
+  class "fastapi.RequestValidationError" as RequestValidationError <<exception>>
+}
+
+InvalidLoginError --|> InvalidCredentialsError
+InvalidPasswordError --|> InvalidCredentialsError
+UserService ..> Credentials : valida credenciais
+Credentials ..> InvalidLoginError : login inválido
+Credentials ..> InvalidPasswordError : senha inválida
+MemoryUserRepository ..> DuplicateUserError
+SQLiteUserRepository ..> DuplicateUserError
+SQLiteUserRepository ..> PersistenceError
+SQLiteWorkoutRepository ..> PersistenceError
+SQLiteWorkoutRepository ..> UserNotFoundError : FK
+WorkoutService ..> InvalidWorkoutError
+WorkoutService ..> UserNotFoundError
+WorkoutService ..> WorkoutNotFoundError
+WorkoutService ..> PersistenceError
+RequestValidationError ..> Handlers : 422 sem input/ctx
+InvalidCredentialsError ..> Handlers : 422
+InvalidWorkoutError ..> Handlers : 422
+UserNotFoundError ..> Handlers : 404
+WorkoutNotFoundError ..> Handlers : 404
+PersistenceError ..> Handlers : 503 com public_message
+DuplicateUserError ..> UserRoutes : 409
+
+note bottom of PersistenceError
+  Mensagens públicas constantes de usuários/treinos.
+  SQL, caminhos e causa original não vão ao cliente.
+end note
+@enduml
