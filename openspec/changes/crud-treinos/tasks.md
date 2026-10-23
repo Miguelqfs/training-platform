@@ -21,7 +21,7 @@ integrarem e verificarem a implementação correspondente.
 - [x] 2.3 Adicionar esquemas, rotas e tratadores HTTP juntos aos testes de cada operação; passar também as rotas de usuários pela fachada. Cobrir campos desconhecidos/imutáveis, tipos estritos no JSON, PUT com substituição e conversão normal de ID na URL. Commit: `feat(api): expor crud de treinos pela fachada`
 - [x] 2.4 Completar testes de indisponibilidade de todas as operações HTTP e de rollback nas três mutações, preservando a mensagem de usuários. Cobrir falha da busca do usuário durante cadastro de treino, sem falso 404. Commit: `test(api): verificar indisponibilidade e atomicidade de treinos`
 - [x] 2.5 Verificar contagem após operações e reinício, ausência de credenciais, texto legítimo coincidente com senha, primeira aplicação após a segunda e uso efetivo da fachada por todas as rotas. Os testes básicos já acompanham as tarefas anteriores. Commit: `test(fachada): completar cenários de contagem e isolamento`
-- [ ] 2.6 Atualizar ADR 0005, diagrama real e tabela de Singleton/Facade junto da introdução da fachada. Commit: `docs(projeto): representar a fachada e seus participantes`
+- [x] 2.6 Atualizar ADR 0005, diagrama real e tabela de Singleton/Facade junto da introdução da fachada. Commit: `docs(projeto): representar a fachada e seus participantes`
 
 ## 3. Terceiro PR: documentação e conclusão da change
 
