@@ -49,4 +49,11 @@ class InvalidPasswordError(InvalidCredentialsError):
 
 
 class PersistenceError(Exception):
-    pass
+    USER_MESSAGE = "Armazenamento de usuários indisponível"
+    WORKOUT_MESSAGE = "Armazenamento de treinos indisponível"
+
+    def __init__(self, message: str, *, public_message: str = USER_MESSAGE) -> None:
+        if public_message not in (self.USER_MESSAGE, self.WORKOUT_MESSAGE):
+            raise ValueError("Mensagem pública de persistência desconhecida")
+        super().__init__(message)
+        self.public_message = public_message

@@ -1,96 +1,137 @@
 @startuml
 !pragma layout smetana
-class "API de usuários" as API <<boundary>> {
-  +cadastrar(dados): Usuário
-  +listar(): Usuário[]
-  +tratarErros(): HTTP 422/409/503
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam defaultFontSize 13
+hide empty members
+
+title Sprint 3 — classes de projeto
+
+package "Fronteira e composição" {
+  class "routers/users, workouts, statistics" as Routes <<boundary>>
+  class "main.create_app" as App <<composition>>
+  class ApplicationContext <<frozen>> {
+    +users: UserService
+    +workouts: WorkoutService
+  }
+  class FacadeSingletonController <<Singleton, Facade>> {
+    -{static} _instance
+    -{static} _lock: Lock
+    +{static} get_instance(): FacadeSingletonController
+    +register_user(context, registration): User
+    +list_users(context): User[]
+    +create_workout(context, registration): Workout
+    +get_workout(context, workout_id): Workout
+    +list_workouts(context): Workout[]
+    +update_workout(context, workout_id, update): Workout
+    +delete_workout(context, workout_id): None
+    +count_entities(context): int
+  }
 }
-class UserService <<control>> {
-  +UserService(repository: UserRepository)
-  +add_user(registration: UserRegistration): User
-  +list_users(): User[]
+
+package "Serviços" {
+  class UserService <<control>> {
+    +add_user(registration: UserRegistration): User
+    +list_users(): User[]
+    +count_users(): int
+  }
+  class WorkoutService <<control>> {
+    +create_workout(registration: WorkoutRegistration): Workout
+    +get_workout(workout_id): Workout
+    +list_workouts(): Workout[]
+    +update_workout(workout_id, update: WorkoutUpdate): Workout
+    +delete_workout(workout_id): None
+    +count_workouts(): int
+  }
 }
-class "Validação de credenciais" as Credentials {
-  +validate_credentials(login, email, senha)
-  +validate_login(login)
-  +validate_password(senha)
-  +hash_password(senha): texto
+
+package "Contratos e persistência" {
+  interface UserRepository <<Protocol>> {
+    +add(data: NewUser): User
+    +list_users(): User[]
+    +get_by_id(user_id): User | None
+    +count(): int
+  }
+  interface WorkoutRepository <<Protocol>> {
+    +add(data: WorkoutRegistration): Workout
+    +get_by_id(workout_id): Workout | None
+    +list_workouts(): Workout[]
+    +update(workout_id, data: WorkoutUpdate): Workout | None
+    +delete(workout_id): bool
+    +count(): int
+  }
+  class MemoryUserRepository
+  class SQLiteUserRepository
+  class MemoryWorkoutRepository {
+    -_next_id: int
+    -_lock: Lock
+  }
+  class SQLiteWorkoutRepository
+  class "storage.sqlite_connection" as Connection <<module>> {
+    +sqlite_connection(path)
+  }
 }
-class UserRegistration <<dados de entrada>> {
-  +username: texto
-  +email: texto
-  +role: UserRole
-  -password: texto
+
+package "Domínio" {
+  class User <<frozen>> {
+    +id: int
+    +username: str
+    +email: str
+    +role: UserRole
+    -password_hash: str
+  }
+  enum UserRole {
+    STUDENT
+    ADMIN
+  }
+  class Workout <<frozen>> {
+    +id: int
+    +user_id: int
+    +name: str
+    +description: str
+  }
+  class UserRegistration <<frozen DTO>>
+  class NewUser <<frozen DTO>>
+  class WorkoutRegistration <<frozen DTO>>
+  class WorkoutUpdate <<frozen DTO>>
+  class PersistenceError <<exception>> {
+    +public_message: str
+  }
 }
-class NewUser <<dados para persistência>> {
-  +username: texto
-  +email: texto
-  +role: UserRole
-  -password_hash: texto
-}
-class User <<entity>> {
-  +id: inteiro
-  +username: texto
-  +email: texto
-  +role: UserRole
-  -password_hash: texto
-}
-enum UserRole {
-  STUDENT
-  ADMIN
-}
-interface UserRepository {
-  +add(data: NewUser): User
-  +list_users(): User[]
-}
-class MemoryUserRepository {
-  -users: User[]
-  -lock: Lock
-}
-class SQLiteUserRepository {
-  -path: Path
-}
-class InvalidCredentialsError <<exception>>
-class InvalidLoginError <<exception>>
-class InvalidPasswordError <<exception>>
-class DuplicateUserError <<exception>>
-class PersistenceError <<exception>>
-class "users.factory" as Factory <<module>> {
-  +create_user_repository(storage, database_path): UserRepository
-}
-API --> UserService
-API ..> InvalidCredentialsError : 422
-API ..> DuplicateUserError : 409
-API ..> PersistenceError : 503
-UserService --> Credentials
+
+App ..> ApplicationContext : cria por aplicação
+Routes --> FacadeSingletonController
+Routes ..> ApplicationContext : obtém de request.app
+FacadeSingletonController ..> ApplicationContext : recebe, não guarda
+ApplicationContext --> UserService
+ApplicationContext --> WorkoutService
+FacadeSingletonController ..> UserService : delega
+FacadeSingletonController ..> WorkoutService : delega
 UserService --> UserRepository
-UserService ..> UserRegistration : recebe
-UserService ..> NewUser : cria com hash
-Credentials ..> InvalidLoginError : lança
-Credentials ..> InvalidPasswordError : lança
-InvalidLoginError --|> InvalidCredentialsError
-InvalidPasswordError --|> InvalidCredentialsError
-Factory ..> MemoryUserRepository : cria
-Factory ..> SQLiteUserRepository : cria
+WorkoutService --> WorkoutRepository
+WorkoutService --> UserRepository : verifica vínculo
 MemoryUserRepository ..|> UserRepository
 SQLiteUserRepository ..|> UserRepository
-MemoryUserRepository o-- "0..*" User
-SQLiteUserRepository --> "0..*" User : persiste no BD
-MemoryUserRepository ..> DuplicateUserError
-SQLiteUserRepository ..> DuplicateUserError
-SQLiteUserRepository ..> PersistenceError : encapsula sqlite3.Error
+MemoryWorkoutRepository ..|> WorkoutRepository
+SQLiteWorkoutRepository ..|> WorkoutRepository
+SQLiteUserRepository ..> Connection
+SQLiteWorkoutRepository ..> Connection
+User "1" -- "0..*" Workout : vínculo por user_id
 User --> UserRole
-note bottom of Credentials
-  Login: 1 a 12 caracteres, sem números.
-  Senha: 8 a 128 caracteres, 3 categorias IAM,
-  diferente de login/e-mail; hash com salt.
+UserService ..> UserRegistration
+UserService ..> NewUser : hash antes da persistência
+WorkoutService ..> WorkoutRegistration
+WorkoutService ..> WorkoutUpdate
+SQLiteUserRepository ..> PersistenceError
+SQLiteWorkoutRepository ..> PersistenceError
+note bottom of Connection
+  Uma conexão por operação, FK habilitada,
+  transação confirmada ou revertida e fechamento.
+  users + workouts no mesmo arquivo.
 end note
-note bottom of UserRepository
-  USER_STORAGE: memory (padrão) ou sqlite.
-  Seleção no início da execução.
-end note
-note bottom of UserService
-  Repositório obrigatório por injeção.
-  Sem dependência de implementação concreta.
+note bottom of FacadeSingletonController
+  Uma instância por processo; construção com trava.
+  Sem contexto ou dados de negócio armazenados.
+  count_entities = usuários + treinos do contexto.
 end note
 @enduml

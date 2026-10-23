@@ -46,4 +46,4 @@ Exemplo de cadastro:
 
 ## Limites da sprint
 
-Autenticação, autorização por tipo, aplicativo mobile, treinos e agente de IA não fazem parte desta implementação. Portanto, `role` classifica o usuário, mas ainda não concede nem restringe acesso. A API é um protótipo local e não deve ser publicada com dados reais antes de proteger cadastro e listagem.
+Autenticação, autorização por tipo, aplicativo mobile e agente de IA não fazem parte desta implementação. O CRUD de planos de treino foi acrescentado na [Sprint 3](treinos.md), preservando os contratos de usuários. Portanto, `role` classifica o usuário, mas ainda não concede nem restringe acesso. A API é um protótipo local e não deve ser publicada com dados reais antes de proteger cadastro e listagem.

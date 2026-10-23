@@ -1,18 +1,34 @@
-# Classes de análise: gerenciamento de usuários
+# Classes de análise: usuários e treinos
 
-Na visão de análise, a fronteira recebe pedidos de cadastro e listagem; o controle aplica as regras; a entidade representa o usuário cadastrado. Os dois papéis previstos são Aluno e Administrador. O treinador IA será um componente futuro, sem papel de usuário nesta entrega.
+A análise representa conceitos do problema e responsabilidades de fronteira,
+controle e entidade. Não descreve classes concretas de persistência nem os
+mecanismos do Singleton; estes ficam no [projeto](08-projeto.md).
 
 ```mermaid
 classDiagram
-    class APIUsuarios {
+    class APIPlataforma {
       <<boundary>>
-      +cadastrar(dados)
-      +listar()
+      +cadastrarUsuario(dados)
+      +listarUsuarios()
+      +gerenciarTreino(operacao, dados)
+      +consultarQuantidade()
     }
     class GerenciamentoUsuarios {
       <<control>>
-      +cadastrarUsuario(dados)
-      +listarUsuarios()
+      +cadastrar(dados)
+      +listar()
+    }
+    class GerenciamentoTreinos {
+      <<control>>
+      +cadastrar(dados)
+      +consultar(id)
+      +listar()
+      +atualizar(id, dados)
+      +excluir(id)
+    }
+    class ConsultaQuantidade {
+      <<control>>
+      +contarUsuariosETreinos()
     }
     class Usuario {
       <<entity>>
@@ -21,14 +37,29 @@ classDiagram
       +email
       +papel
     }
+    class Treino {
+      <<entity>>
+      +id
+      +nome
+      +descricao
+    }
     class Papel {
       <<enumeration>>
       ALUNO
       ADMINISTRADOR
     }
-    APIUsuarios --> GerenciamentoUsuarios
+    APIPlataforma --> GerenciamentoUsuarios
+    APIPlataforma --> GerenciamentoTreinos
+    APIPlataforma --> ConsultaQuantidade
     GerenciamentoUsuarios --> Usuario
+    GerenciamentoTreinos --> Treino
+    GerenciamentoTreinos --> Usuario : verifica vínculo
+    ConsultaQuantidade --> Usuario
+    ConsultaQuantidade --> Treino
+    Usuario "1" -- "0..*" Treino : possui
     Usuario --> Papel
 ```
 
-As classes de implementação, exceções e alternativas de persistência aparecem no [diagrama de projeto](08-projeto.md).
+Treino é um plano, ainda sem exercícios ou execução. Cada treino pertence a
+exatamente um usuário existente; um usuário pode não ter treinos. O papel não
+impõe autorização no protótipo. Aplicativo e treinador IA permanecem futuros.

@@ -1,33 +1,51 @@
-name: ci 
+name: ci
 
-on: 
+on:
   pull_request:
-    branches: [main, develop] # ci worflow for both branches
+    branches: [main, develop]
+
+permissions:
+  contents: read
 
 jobs:
   tests:
     name: Tests
     runs-on: ubuntu-latest
-
     steps:
       - name: Check out code
         uses: actions/checkout@v7
-
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-      
       - name: Install dependencies
         run: |
-          pip install --upgrade pip
-          pip install -r requirements-dev.txt
-      
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
       - name: Check lint
         run: python -m ruff check .
-
       - name: Check formatting
         run: python -m ruff format --check .
-
       - name: Run tests
         run: python -m pytest -v
+
+  documentation:
+    name: Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v7
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Install documentation tools
+        run: npm install --prefix "$RUNNER_TEMP/docs-tools" --no-save @fission-ai/openspec@1.14.3 yaml@2.8.2
+      - name: Test specification conventions
+        run: node --test scripts/check-specs.test.mjs
+      - name: Validate configuration, links and specifications
+        env:
+          DOCS_TOOLS_DIR: ${{ runner.temp }}/docs-tools/node_modules
+          OPENSPEC_TELEMETRY: "0"
+        run: node scripts/check-docs.mjs
