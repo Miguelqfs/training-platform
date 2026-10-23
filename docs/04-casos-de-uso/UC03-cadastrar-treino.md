@@ -36,4 +36,4 @@ preservados; SQLite reverte a mutação.
 **Exemplo:** `{"user_id":1,"name":" Peito ","description":" supino "}`
 retorna `{"id":1,"user_id":1,"name":"Peito","description":"supino"}`.
 
-[Contrato completo](../../openspec/changes/crud-treinos/specs/treinos/spec.md) · [Índice](README.md)
+[Contrato completo](../../openspec/specs/treinos/spec.md) · [Índice](README.md)

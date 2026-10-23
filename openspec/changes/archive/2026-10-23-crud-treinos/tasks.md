@@ -1,8 +1,8 @@
 # Tasks
 
-Checklist de integração da Sprint 3. O código foi preparado localmente, mas este
-PR publica somente contratos e decisões. Os itens serão marcados nos PRs que
-integrarem e verificarem a implementação correspondente.
+Implementação e publicação autorizadas em 23/10/2026. As tarefas foram
+organizadas em commits pequenos por responsabilidade. As mensagens junto aos
+itens são referências do planejamento; o histórico Git registra as efetivas.
 
 ## 1. Primeiro PR: domínio e persistência
 
@@ -29,15 +29,15 @@ integrarem e verificarem a implementação correspondente.
 - [x] 3.2 Acrescentar wireframes TL01–TL03 em `docs/06-interface/`. Commit: `docs(interface): propor wireframes dos casos detalhados`
 - [x] 3.3 Atualizar análise conceitual e conferir a correspondência entre diagrama real, imagem, tabela de padrões e ADR já presentes nos PRs de código. Commit: `docs(analise): representar os conceitos de treinos`
 - [x] 3.4 Atualizar arquitetura lógica e física, a tabela dos RNFs, visão, glossário e README. Remeter `docs/07-arquitetura/` aos arquivos existentes, sem mover ADRs. Commit: `docs(arquitetura): relacionar requisitos e decisões da sprint 3`
-- [ ] 3.5 Acrescentar validação de documentação ao CI: parsing, tipos e conteúdo do YAML, OpenSpec e links locais, sem depender da existência de uma change específica. Fixar a versão da ferramenta, sem dependência de execução nova na API. Validar o job antes e depois do arquivamento. Commit: `chore(ci): validar configuração e especificações do projeto`
-- [ ] 3.6 Arquivar a change somente depois da implementação, dos testes e das validações finais, aplicando o delta em `openspec/specs/` sem perder requisitos inalterados. Revalidar as specs após arquivar. Commit: `docs(openspec): arquivar a change de treinos`
+- [x] 3.5 Acrescentar validação de documentação ao CI: parsing, tipos e conteúdo do YAML, OpenSpec e links locais, sem depender da existência de uma change específica. Fixar a versão da ferramenta, sem dependência de execução nova na API. Validar o job antes e depois do arquivamento. Commit: `chore(ci): validar configuração e especificações do projeto`
+- [x] 3.6 Arquivar a change somente depois da implementação, dos testes e das validações finais, aplicando o delta em `openspec/specs/` sem perder requisitos inalterados. Revalidar as specs após arquivar. Commit: `docs(openspec): arquivar a change de treinos`
 
 ## 4. Verificação
 
-- [ ] 4.1 Com o Python 3.12 do ambiente, executar `python -m ruff check .`, `python -m ruff format --check .`, `python -m pytest` e `git diff --check`.
-- [ ] 4.2 Executar `openspec validate --all` com `@fission-ai/openspec@1.14.3`, fazer parsing real do YAML e confirmar contexto/regras por `openspec instructions` enquanto a change está aberta. Depois de arquivar, repetir a validação das specs/configuração sem depender daquele caminho de change. Relatar todos os avisos; validação das specs não substitui validação da configuração.
-- [ ] 4.3 Confirmar que a suíte anterior continua passando e que os cenários novos têm teste observável; executar cada cenário nos dois modos quando aplicável. Conferir a matriz abaixo.
-- [ ] 4.4 Conferir fontes/imagens dos diagramas, links locais e execução local dos passos do CI; medir cobertura comparável. A execução hospedada será conferida no PR, após autorização de publicação.
+- [x] 4.1 Com o Python 3.12 do ambiente, executar `python -m ruff check .`, `python -m ruff format --check .`, `python -m pytest` e `git diff --check`.
+- [x] 4.2 Executar `openspec validate --all` com `@fission-ai/openspec@1.14.3`, fazer parsing real do YAML e confirmar contexto/regras por `openspec instructions` enquanto a change está aberta. Depois de arquivar, repetir a validação das specs/configuração sem depender daquele caminho de change. Relatar todos os avisos; validação das specs não substitui validação da configuração.
+- [x] 4.3 Confirmar que a suíte anterior continua passando e que os cenários novos têm teste observável; executar cada cenário nos dois modos quando aplicável. Conferir a matriz abaixo.
+- [x] 4.4 Conferir fontes/imagens dos diagramas, links locais e execução local dos passos do CI; medir cobertura comparável. A execução hospedada será conferida no PR, após autorização de publicação.
 
 ## Matriz de aceitação para a implementação
 
@@ -57,10 +57,66 @@ integrarem e verificarem a implementação correspondente.
 | NF-MAN-01, NF-MAN-02 | Contratos substitutos completos, sem herança de classes concretas nem SQL/HTTP no serviço. |
 | NF-USA-02 | Erros de campo na fronteira; uma regra por exceção de domínio, com precedência explícita e sem depender da ordem da suíte. |
 
-A suíte de 210 testes foi preparada e executada localmente; ela não integra este
-PR de proposta. Cada etapa de código incluirá seus testes e repetirá os checks.
+Os cenários da matriz foram implementados e executados. A suíte passou de 42 para 210 testes; a linha de base foi executada separadamente para comparação de cobertura.
 
 ## Commits e pull requests
 
-Os commits usam Conventional Commits, escopo do módulo e descrição em português no imperativo. Testes acompanham o código correspondente; commits adicionais de teste completam a cobertura, sem adiar toda a verificação. Cada PR precisa passar seus checks antes de entrar em `develop`. A divisão, as dependências entre PRs e a justificativa de tamanho estão em `proposal.md`. A publicação foi autorizada pela equipe, em commits pequenos e PRs sequenciais.
-A integração de cada etapa depende dos checks e das regras de proteção do GitHub.
+Os commits usam Conventional Commits, escopo do módulo e descrição em português no imperativo. Testes acompanham o código correspondente; commits adicionais de teste completam a cobertura, sem adiar toda a verificação. Cada PR precisa passar seus checks antes de entrar em `develop`. A divisão, as dependências entre PRs e a justificativa de tamanho estão em `proposal.md`. A proposta foi integrada no PR #11; persistência no PR #12; fachada/API no
+PR #13, todos com CI aprovado. A documentação e o arquivamento são publicados
+neste PR. A release fica para a validação integrada e o PR develop → main.
+
+
+## Evidências de validação local — 23/10/2026
+
+- Python 3.12: 210 testes aprovados com `-W error`, sem avisos; os 42 testes
+  anteriores permanecem. Verificador da disciplina: 7 testes Node.js aprovados.
+- Ruff e formatação aprovados; `git diff --check` sem erros.
+- Coverage 7.17.0, `--branch --source=app`: linha de base em cópia isolada
+  de `5a6292a`, 99,13% (208/209 linhas, 21/22 ramos); implementação, 99,51%
+  (557/558 linhas, 52/54 ramos). O ramo concorrente inicial da fachada é
+  exercitado em subprocesso novo, fora da coleta do processo principal.
+  A linha não executada é a rejeição de Python diferente de 3.12 já presente.
+- `scripts/check-docs.mjs`: YAML, tipos/conteúdo, links e OpenSpec aprovados
+  antes e depois do arquivamento (7 specs aprovadas, 0 falhas). Testes negativos rejeitaram YAML quebrado,
+  contexto/regras com tipos inválidos e link inexistente, restaurando os arquivos.
+- `openspec instructions design --change crud-treinos --json`: contexto e
+  regras efetivamente carregados da configuração, sem fallback silencioso.
+- Servidor Uvicorn real nos dois modos: inicialização por ambiente, OpenAPI,
+  cadastro de usuário, CRUD de treino e contagem aprovados por HTTP local.
+- PlantUML 1.2026.2/Smetana: três fontes renderizadas e PNGs inspecionados.
+- Arquivamento conferido: 14 IDs anteriores preservados, 11 requisitos não
+  afetados idênticos, 17 adições e 3 alterações previstas. Nenhum requisito
+  removido ou renumerado. OpenSpec normal: sem falhas. Avisos SHALL/MUST correspondem ao uso de DEVE;
+  os dois avisos de texto longo são anteriores (RF03 e NF-USA-01).
+- Os testes abrangem os dois modos, contratos substitutos, construção inicial
+  concorrente, isolamento, banco legado, reinício, FK e rollback de três
+  mutações com preservação dos outros treinos, usando gatilhos ABORT e FAIL.
+  Depois de esvaziar a coleção, IDs continuam monotônicos nos dois modos. IDs positivos além de 64 bits
+  retornam ausência real, sem overflow do driver nem alteração do contrato.
+
+### Revisão de conformidade e robustez
+
+Conferidos novamente o CONTRIBUTING e o checklist da Entrega 2 do
+[modelo do professor](https://github.com/rkulesza/mps-modelo/blob/main/docs/00-entregas.md).
+
+- A visão complementar de exceções mantém as validações da Sprint 2 e mostra
+  as novas exceções e sua tradução HTTP, junto ao diagrama principal atualizado.
+- Mensagens dos limites de treino derivam das mesmas constantes da validação.
+  Não houve alteração dos limites nem dos textos públicos.
+- O OpenAPI descreve IDs positivos, total não negativo e erros por operação.
+  O esquema de 422 aceita tanto a mensagem de domínio quanto erros por campo,
+  conforme respostas reais verificadas nos testes, sem mudar os corpos HTTP.
+- A verificação de documentação exige IDs únicos, prioridade prevista e casos
+  de uso nas specs em vigor. O verificador anterior aceitava prioridade “Alta”;
+  a reprodução confirmou o defeito e o atual rejeita essa entrada. Sete testes
+  automáticos cobrem aceitação e rejeição; estão integrados ao job de documentação.
+- Conferidas as assinaturas de funções de produção e testes: até três parâmetros
+  explícitos, desconsiderando `self` e `cls`; casos parametrizados foram agrupados.
+- A cobertura combinada acima corresponde a linhas e ramificações Python;
+  testes Node.js são relatados separadamente. Não há alegação de 100% de cobertura.
+
+A integração foi organizada em commits pequenos, preservados por merge commits
+nos PRs #11–#13. Cada commit passou localmente por testes, Ruff, formatação e
+OpenSpec; cada PR passou no CI antes da integração. A documentação representa
+o estado final do código. O CI desta etapa será conferido antes do merge;
+a release v0.2.0 será criada somente após o PR develop → main aprovado nos checks.

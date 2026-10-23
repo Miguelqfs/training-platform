@@ -25,5 +25,5 @@ detalhados descrevem também a violação dessas pré-condições no acesso HTTP
 O bloco futuro deriva da [visão](../01-visao.md), sem afirmar implementação.
 A contagem vem do enunciado da Sprint 3. Os contratos normativos ficam em
 [usuários](../../openspec/specs/usuarios/spec.md),
-[treinos](../../openspec/changes/crud-treinos/specs/treinos/spec.md) e
-[fachada](../../openspec/changes/crud-treinos/specs/fachada/spec.md).
+[treinos](../../openspec/specs/treinos/spec.md) e
+[fachada](../../openspec/specs/fachada/spec.md).

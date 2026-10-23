@@ -35,4 +35,4 @@ planos intactos. **Garantia em falha:** treino completo e total preservados.
 **Exemplo:** `PUT /workouts/1` com `{"name":" Costas ","description":" remada "}`
 retorna `{"id":1,"user_id":1,"name":"Costas","description":"remada"}`.
 
-[Contrato completo](../../openspec/changes/crud-treinos/specs/treinos/spec.md) · [Índice](README.md)
+[Contrato completo](../../openspec/specs/treinos/spec.md) · [Índice](README.md)

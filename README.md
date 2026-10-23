@@ -18,7 +18,7 @@ Projeto da disciplina de Métodos de Projetos de Software. O produto pretende re
 - [Glossário](docs/02-glossario.md)
 - [Elicitação e evidências](docs/03-elicitacao.md)
 - [Requisitos funcionais de usuários](openspec/specs/usuarios/spec.md)
-- [Requisitos de treinos](openspec/changes/crud-treinos/specs/treinos/spec.md) e [fachada](openspec/changes/crud-treinos/specs/fachada/spec.md)
+- [Requisitos de treinos](openspec/specs/treinos/spec.md) e [fachada](openspec/specs/fachada/spec.md)
 - [Interface proposta](docs/06-interface/README.md) e [arquitetura](docs/07-arquitetura/README.md)
 - [Requisitos não funcionais](openspec/specs/rnf/)
 - [Casos de uso](docs/04-casos-de-uso/README.md), [análise](docs/05-analise.md) e [projeto](docs/08-projeto.md)

@@ -1,7 +1,7 @@
 # Treinos e fachada: Sprint 3
 
-A especificação normativa está em [treinos](../../openspec/changes/crud-treinos/specs/treinos/spec.md)
-e [fachada](../../openspec/changes/crud-treinos/specs/fachada/spec.md). A origem dos limites e da
+A especificação normativa está em [treinos](../../openspec/specs/treinos/spec.md)
+e [fachada](../../openspec/specs/fachada/spec.md). A origem dos limites e da
 interpretação da contagem está no [ADR 0005](../adr/0005-treinos-fachada.md).
 
 | ID | Requisito | Prioridade |
