@@ -9,7 +9,7 @@ def test_service_accepts_an_independent_repository() -> None:
 
         def add(self, data: NewUser) -> User:
             user = User(
-                id=42,
+                id=42 + len(self.users),
                 username=data.username,
                 email=data.email,
                 role=data.role,
@@ -21,7 +21,14 @@ def test_service_accepts_an_independent_repository() -> None:
         def list_users(self) -> list[User]:
             return list(self.users)
 
-    service = UserService(SubstituteRepository())
+        def get_by_id(self, user_id: int) -> User | None:
+            return next((user for user in self.users if user.id == user_id), None)
+
+        def count(self) -> int:
+            return len(self.users)
+
+    repository = SubstituteRepository()
+    service = UserService(repository)
     user = service.add_user(
         UserRegistration(
             username=" Maria ",
@@ -36,3 +43,13 @@ def test_service_accepts_an_independent_repository() -> None:
     assert user.email == "maria@example.com"
     assert user.password_hash.startswith("pbkdf2_sha256$")
     assert service.list_users() == [user]
+    assert repository.get_by_id(42) == user
+    assert repository.get_by_id(999) is None
+    assert service.count_users() == 1
+    second = service.add_user(
+        UserRegistration("ana", "ana@example.com", UserRole.ADMIN, "Abcdef12")
+    )
+    assert repository.get_by_id(42) == user
+    assert repository.get_by_id(43) == second
+    assert service.count_users() == 2
+    assert service.list_users() == [user, second]
