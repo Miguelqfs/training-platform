@@ -349,3 +349,36 @@ def test_openapi_describes_positive_ids_and_nonnegative_total(client):
         assert schemas[model]["properties"]["user_id"]["exclusiveMinimum"] == 0
     assert schemas["WorkoutResponse"]["properties"]["id"]["exclusiveMinimum"] == 0
     assert schemas["EntityCount"]["properties"]["total"]["minimum"] == 0
+
+
+def test_openapi_error_contracts_match_actual_response_shapes(client):
+    from app.schemas import ValidationErrorResponse
+
+    specification = client.get("/openapi.json").json()
+    operations = [
+        ("/users/", "post", {"409", "422", "503"}),
+        ("/users/", "get", {"503"}),
+        ("/workouts/", "post", {"404", "422", "503"}),
+        ("/workouts/", "get", {"503"}),
+        ("/workouts/{workout_id}", "get", {"404", "422", "503"}),
+        ("/workouts/{workout_id}", "put", {"404", "422", "503"}),
+        ("/workouts/{workout_id}", "delete", {"404", "422", "503"}),
+        ("/statistics/entities", "get", {"503"}),
+    ]
+    for path, method, codes in operations:
+        responses = specification["paths"][path][method]["responses"]
+        assert codes <= responses.keys()
+        for code in codes:
+            reference = responses[code]["content"]["application/json"]["schema"]["$ref"]
+            expected = "ValidationErrorResponse" if code == "422" else "ErrorMessage"
+            assert reference.endswith("/" + expected)
+    response = client.post("/users/", json={**USER, "username": "user1"})
+    assert response.status_code == 422
+    assert isinstance(
+        ValidationErrorResponse.model_validate(response.json()).detail, str
+    )
+    response = client.post("/workouts/", json={"user_id": 1, "name": ""})
+    assert response.status_code == 422
+    assert isinstance(
+        ValidationErrorResponse.model_validate(response.json()).detail, list
+    )

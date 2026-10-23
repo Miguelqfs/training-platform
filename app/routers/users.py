@@ -1,14 +1,39 @@
+from http import HTTPStatus
+
 from fastapi import APIRouter, HTTPException, status
 
 from app.dependencies import Context
 from app.facade import FacadeSingletonController
-from app.schemas import User, UserCreate
-from app.users.domain import DuplicateUserError, UserRegistration
+from app.schemas import ErrorMessage, User, UserCreate, ValidationErrorResponse
+from app.users.domain import DuplicateUserError, PersistenceError, UserRegistration
 
-router = APIRouter(prefix="/users", tags=["users"])
+router = APIRouter(
+    prefix="/users",
+    tags=["users"],
+    responses={
+        status.HTTP_503_SERVICE_UNAVAILABLE: {
+            "model": ErrorMessage,
+            "description": PersistenceError.USER_MESSAGE,
+        }
+    },
+)
 
 
-@router.post("/", response_model=User, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/",
+    response_model=User,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        status.HTTP_409_CONFLICT: {
+            "model": ErrorMessage,
+            "description": "Usuário ou e-mail já cadastrado",
+        },
+        HTTPStatus.UNPROCESSABLE_ENTITY: {
+            "model": ValidationErrorResponse,
+            "description": "Entrada inválida",
+        },
+    },
+)
 def create_user(payload: UserCreate, context: Context) -> User:
     try:
         user = FacadeSingletonController.get_instance().register_user(
