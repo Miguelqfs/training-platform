@@ -58,4 +58,6 @@ o mesmo arquivo SQLite compartilha eventos confirmados.
 
 Os [ADRs 0003](adr/0003-validacao-persistencia.md)–[0004](adr/0004-revisao-entrega-1.md)
 registram entregas anteriores; o [0006](adr/0006-repository-factory.md) registra
-Factory e repositório de eventos. Command e Memento continuam fora do escopo.
+Factory e repositório de eventos. Esboços [0007](adr/0007-adapter-log-eventos.md) e
+[0008](adr/0008-relatorio-template-method.md) completam nos PRs de Luigi e Miguel.
+Handoff: [docs/sprint4/README.md](sprint4/README.md). Command e Memento continuam fora do escopo.

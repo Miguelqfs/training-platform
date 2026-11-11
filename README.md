@@ -125,6 +125,23 @@ não guarda dados. Cada aplicação tem seu contexto; RAM e arquivos diferentes
 são independentes, enquanto o mesmo SQLite compartilha registros confirmados.
 Decisões: [ADR 0005](docs/adr/0005-treinos-fachada.md).
 
+## Sprint 4 (integração em andamento)
+
+A change [relatorio-de-acessos](openspec/changes/relatorio-de-acessos/proposal.md) acrescenta
+eventos nas operações bem-sucedidas de treino (criar, consultar individual, atualizar,
+excluir) e relatório por período. Persistência de eventos, Factory e Unit of Work já
+estão em `develop` ([ADR 0006](docs/adr/0006-repository-factory.md)). Registro nas
+rotas e geração do relatório seguem os guias em [docs/sprint4/](docs/sprint4/README.md).
+
+| Operação | Endpoint | Situação |
+| --- | --- | --- |
+| Evento após UC03–UC07 | rotas `/workouts/` | **Luigi** (ver guia) |
+| Relatório HTML/PDF | `GET /statistics/accesses?start=&end=&format=html\|pdf` | **Miguel** (ver guia) |
+| Contar entidades | `GET /statistics/entities` | implementado (sem eventos) |
+
+Parâmetros de período: RFC 3339 com fuso explícito; intervalo semiaberto `[start, end)`.
+A consulta do relatório não registra evento. Detalhes: [UC09](docs/04-casos-de-uso/UC09-gerar-relatorio-acessos.md).
+
 ### Verificar a documentação
 
 Com Node.js 20.19 ou superior, instale as versões usadas pelo CI em um diretório
