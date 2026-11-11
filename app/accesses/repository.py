@@ -3,35 +3,14 @@ from __future__ import annotations
 import sqlite3
 from collections.abc import Iterator
 from contextlib import contextmanager
-from datetime import UTC, datetime
+from datetime import datetime
 from pathlib import Path
 from threading import RLock
 
-from app.accesses.domain import AccessEvent
+from app.accesses.domain import AccessEvent, interval
 from app.accesses.ports import AccessEventRepository as AccessEventRepository
 from app.storage import sqlite_connection
 from app.users.domain import PersistenceError
-
-
-def utc(value: datetime) -> datetime:
-    if value.tzinfo is None or value.utcoffset() is None:
-        raise ValueError("Instante deve ter fuso explícito")
-    return value.astimezone(UTC)
-
-
-def interval(start: datetime, end: datetime) -> tuple[datetime, datetime]:
-    start, end = utc(start), utc(end)
-    if start >= end:
-        raise ValueError("Início deve ser anterior ao fim")
-    return start, end
-
-
-def normalized(event: AccessEvent) -> AccessEvent:
-    if type(event.user_id) is not int or event.user_id < 1:
-        raise ValueError("Identificador de usuário inválido")
-    if event.operation not in ("create", "get", "update", "delete"):
-        raise ValueError("Operação inválida")
-    return AccessEvent(event.user_id, event.operation, utc(event.occurred_at))
 
 
 class MemoryAccessEventRepository:
@@ -39,8 +18,17 @@ class MemoryAccessEventRepository:
         self._events: list[AccessEvent] = []
         self._lock = lock if lock is not None else RLock()
 
+    @contextmanager
+    def transaction(self) -> Iterator[None]:
+        with self._lock:
+            events = self._events.copy()
+            try:
+                yield
+            except BaseException:
+                self._events = events
+                raise
+
     def add(self, event: AccessEvent) -> None:
-        event = normalized(event)
         with self._lock:
             self._events.append(event)
 
@@ -84,7 +72,6 @@ class SQLiteAccessEventRepository:
                 yield connection
 
     def add(self, event: AccessEvent) -> None:
-        event = normalized(event)
         try:
             with self._db() as db:
                 db.execute(

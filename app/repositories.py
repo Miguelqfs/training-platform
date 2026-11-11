@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sqlite3
 from collections.abc import Iterator
-from contextlib import AbstractContextManager, contextmanager
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from threading import RLock
@@ -16,6 +16,7 @@ from app.accesses.repository import (
     SQLiteAccessEventRepository,
 )
 from app.storage import sqlite_connection
+from app.unit_of_work import TransactionRepositories, UnitOfWork
 from app.users.domain import PersistenceError
 from app.users.repository import (
     MemoryUserRepository,
@@ -29,16 +30,6 @@ from app.workouts.repository import (
 )
 
 
-@dataclass(frozen=True)
-class TransactionRepositories:
-    workouts: WorkoutRepository
-    accesses: AccessEventRepository
-
-
-class UnitOfWork(Protocol):
-    def transaction(self) -> AbstractContextManager[TransactionRepositories]: ...
-
-
 class MemoryUnitOfWork:
     def __init__(
         self,
@@ -50,17 +41,12 @@ class MemoryUnitOfWork:
 
     @contextmanager
     def transaction(self) -> Iterator[TransactionRepositories]:
-        with self._lock:
-            workouts = self._workouts._workouts.copy()
-            next_id = self._workouts._next_id
-            events = self._accesses._events.copy()
-            try:
-                yield TransactionRepositories(self._workouts, self._accesses)
-            except BaseException:
-                self._workouts._workouts = workouts
-                self._workouts._next_id = next_id
-                self._accesses._events = events
-                raise
+        with (
+            self._lock,
+            self._workouts.transaction(),
+            self._accesses.transaction(),
+        ):
+            yield TransactionRepositories(self._workouts, self._accesses)
 
 
 class SQLiteUnitOfWork:

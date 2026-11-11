@@ -159,3 +159,24 @@ def test_distinct_sqlite_files_are_isolated(tmp_path):
         )
         == []
     )
+
+
+@pytest.mark.parametrize(
+    "user_id,operation,occurred_at",
+    [
+        (0, "get", datetime(2026, 1, 1, tzinfo=UTC)),
+        (True, "get", datetime(2026, 1, 1, tzinfo=UTC)),
+        (1, "unknown", datetime(2026, 1, 1, tzinfo=UTC)),
+        (1, "get", datetime(2026, 1, 1)),
+    ],
+)
+def test_event_rejects_invalid_domain_data(user_id, operation, occurred_at):
+    with pytest.raises(ValueError):
+        AccessEvent(user_id, operation, occurred_at)
+
+
+def test_event_normalizes_timezone_at_construction():
+    local = datetime(2026, 1, 1, tzinfo=timezone(timedelta(hours=-3)))
+    assert AccessEvent(1, "get", local).occurred_at == datetime(
+        2026, 1, 1, 3, tzinfo=UTC
+    )

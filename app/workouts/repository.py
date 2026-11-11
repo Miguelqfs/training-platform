@@ -24,6 +24,18 @@ class MemoryWorkoutRepository:
         self._next_id = 1
         self._lock = lock if lock is not None else RLock()
 
+    @contextmanager
+    def transaction(self) -> Iterator[None]:
+        with self._lock:
+            workouts = self._workouts.copy()
+            next_id = self._next_id
+            try:
+                yield
+            except BaseException:
+                self._workouts = workouts
+                self._next_id = next_id
+                raise
+
     def add(self, data: WorkoutRegistration) -> Workout:
         with self._lock:
             workout = Workout(self._next_id, data.user_id, data.name, data.description)

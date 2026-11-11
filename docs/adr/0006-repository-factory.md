@@ -8,7 +8,7 @@ Usuários e treinos já são acessados por protocolos com implementações em RA
 
 `RepositoryFactory` define a criação de uma família de repositórios e de uma unidade de trabalho. `MemoryRepositoryFactory` e `SQLiteRepositoryFactory` são fábricas concretas; a composição seleciona uma delas com a configuração existente. Os protocolos `UserRepository`, `WorkoutRepository` e `AccessEventRepository` representam os contratos utilizados pelo negócio. O conjunto é criado por aplicação, sem estado global.
 
-`UnitOfWork.transaction()` fornece repositórios de treinos e eventos que compartilham o mesmo limite transacional. SQLite usa uma conexão e transação por operação; RAM usa uma trava compartilhada e restaura o estado em caso de exceção. O chamador deve executar as duas escritas dentro do bloco e deixar exceções saírem dele. O registro dos eventos nas operações será integrado em outra tarefa.
+`UnitOfWork.transaction()` fornece repositórios de treinos e eventos que compartilham o mesmo limite transacional. SQLite usa uma conexão e transação por operação; RAM usa uma trava compartilhada e cada repositório restaura seu próprio estado em caso de exceção. O chamador deve executar as duas escritas dentro do bloco e deixar exceções saírem dele. O registro dos eventos nas operações será integrado em outra tarefa.
 
 Eventos têm proprietário, operação e instante UTC; consultas usam intervalo semiaberto. A tabela e o índice são criados sem modificar os dados existentes. A fábrica mantém as variáveis `USER_STORAGE` e `USER_DATABASE`, e aplicações SQLite para um mesmo arquivo compartilham dados confirmados.
 
@@ -25,3 +25,5 @@ with repositories.unit_of_work.transaction() as tx:
 ```
 
 O serviço deve validar os dados, identificar o proprietário e construir o evento antes de retornar sucesso; a fábrica não captura operações automaticamente. O contrato HTTP e os demais detalhes da geração de relatórios continuam na change proposta.
+
+A entidade `AccessEvent` valida os campos e normaliza o instante; a regra de intervalo pertence ao domínio de acessos. A interface da unidade de trabalho fica em `app/unit_of_work.py`, sem dependência de SQLite ou implementações concretas.
