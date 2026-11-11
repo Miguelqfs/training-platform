@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 import sqlite3
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import replace
 from pathlib import Path
-from threading import Lock
-from typing import Protocol
+from threading import RLock
 
 from app.storage import sqlite_connection
 from app.users.domain import PersistenceError
@@ -12,22 +15,14 @@ from app.workouts.domain import (
     WorkoutRegistration,
     WorkoutUpdate,
 )
-
-
-class WorkoutRepository(Protocol):
-    def add(self, data: WorkoutRegistration) -> Workout: ...
-    def get_by_id(self, workout_id: int) -> Workout | None: ...
-    def list_workouts(self) -> list[Workout]: ...
-    def update(self, workout_id: int, data: WorkoutUpdate) -> Workout | None: ...
-    def delete(self, workout_id: int) -> bool: ...
-    def count(self) -> int: ...
+from app.workouts.ports import WorkoutRepository as WorkoutRepository
 
 
 class MemoryWorkoutRepository:
-    def __init__(self) -> None:
+    def __init__(self, lock: RLock | None = None) -> None:
         self._workouts: dict[int, Workout] = {}
         self._next_id = 1
-        self._lock = Lock()
+        self._lock = lock if lock is not None else RLock()
 
     def add(self, data: WorkoutRegistration) -> Workout:
         with self._lock:
@@ -70,10 +65,15 @@ def storage_failure() -> PersistenceError:
 
 
 class SQLiteWorkoutRepository:
-    def __init__(self, path: Path) -> None:
+    def __init__(
+        self, path: Path, connection: sqlite3.Connection | None = None
+    ) -> None:
         self._path = path
+        self._connection = connection
+        if connection is not None:
+            return
         try:
-            with sqlite_connection(self._path) as connection:
+            with self._db() as connection:
                 connection.execute("""CREATE TABLE IF NOT EXISTS workouts (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     user_id INTEGER NOT NULL,
@@ -84,9 +84,17 @@ class SQLiteWorkoutRepository:
         except sqlite3.Error as error:
             raise storage_failure() from error
 
+    @contextmanager
+    def _db(self) -> Iterator[sqlite3.Connection]:
+        if self._connection is not None:
+            yield self._connection
+        else:
+            with sqlite_connection(self._path) as connection:
+                yield connection
+
     def add(self, data: WorkoutRegistration) -> Workout:
         try:
-            with sqlite_connection(self._path) as connection:
+            with self._db() as connection:
                 # Afinidade INTEGER do SQLite preserva IDs sem overflow do binding Python.
                 cursor = connection.execute(
                     "INSERT INTO workouts (user_id, name, description) VALUES (?, ?, ?)",
@@ -105,7 +113,7 @@ class SQLiteWorkoutRepository:
 
     def get_by_id(self, workout_id: int) -> Workout | None:
         try:
-            with sqlite_connection(self._path) as connection:
+            with self._db() as connection:
                 row = connection.execute(
                     "SELECT id, user_id, name, description FROM workouts WHERE id = ?",
                     (str(workout_id),),
@@ -116,7 +124,7 @@ class SQLiteWorkoutRepository:
 
     def list_workouts(self) -> list[Workout]:
         try:
-            with sqlite_connection(self._path) as connection:
+            with self._db() as connection:
                 rows = connection.execute(
                     "SELECT id, user_id, name, description FROM workouts ORDER BY id"
                 ).fetchall()
@@ -126,7 +134,7 @@ class SQLiteWorkoutRepository:
 
     def update(self, workout_id: int, data: WorkoutUpdate) -> Workout | None:
         try:
-            with sqlite_connection(self._path) as connection:
+            with self._db() as connection:
                 cursor = connection.execute(
                     "UPDATE workouts SET name = ?, description = ? WHERE id = ?",
                     (data.name, data.description, str(workout_id)),
@@ -143,7 +151,7 @@ class SQLiteWorkoutRepository:
 
     def delete(self, workout_id: int) -> bool:
         try:
-            with sqlite_connection(self._path) as connection:
+            with self._db() as connection:
                 return (
                     connection.execute(
                         "DELETE FROM workouts WHERE id = ?", (str(workout_id),)
@@ -155,7 +163,7 @@ class SQLiteWorkoutRepository:
 
     def count(self) -> int:
         try:
-            with sqlite_connection(self._path) as connection:
+            with self._db() as connection:
                 return connection.execute("SELECT COUNT(*) FROM workouts").fetchone()[0]
         except sqlite3.Error as error:
             raise storage_failure() from error

@@ -5,9 +5,9 @@ Esta lista planeja a sprint; itens permanecem abertos até serem concluídos e v
 ## Contratos e persistência
 
 - [ ] 1.1 Registrar ADR dos contratos públicos de eventos, relatórios e consistência no primeiro PR que os introduzir.
-- [ ] 1.2 Registrar ADR Repository + Factory com participantes, variantes escolhidas e composição RAM/SQLite.
-- [ ] 1.3 Implementar protocolo e repositórios de eventos, com testes de intervalo, persistência, banco legado e isolamento.
-- [ ] 1.4 Integrar fábrica e unidade de trabalho à composição de usuários, treinos e eventos, preservando a configuração e os testes anteriores.
+- [x] 1.2 Registrar ADR Repository + Factory com participantes, variantes escolhidas e composição RAM/SQLite.
+- [x] 1.3 Implementar protocolo e repositórios de eventos, com testes de intervalo, persistência, banco legado e isolamento.
+- [x] 1.4 Integrar fábrica e unidade de trabalho à composição de usuários, treinos e eventos, preservando a configuração e os testes anteriores.
 
 ## Registro e Adapter
 

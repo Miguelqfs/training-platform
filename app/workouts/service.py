@@ -1,5 +1,5 @@
 from app.users.domain import PersistenceError
-from app.users.repository import UserRepository
+from app.users.ports import UserRepository
 from app.workouts.domain import (
     InvalidWorkoutError,
     UserNotFoundError,
@@ -15,7 +15,7 @@ from app.workouts.policy import (
     WORKOUT_DESCRIPTION_ERROR,
     WORKOUT_NAME_ERROR,
 )
-from app.workouts.repository import WorkoutRepository
+from app.workouts.ports import WorkoutRepository
 
 
 def validate_id(value: int, entity: str) -> None:
