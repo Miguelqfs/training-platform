@@ -1,6 +1,9 @@
 # Luigi — registro de acessos e Adapter
 
-Referências: [design](../../openspec/changes/relatorio-de-acessos/design.md), [spec delta](../../openspec/changes/relatorio-de-acessos/specs/relatorio-de-acessos/spec.md), [ADR 0006](../adr/0006-repository-factory.md), esboço [ADR 0007](../adr/0007-adapter-log-eventos.md).
+Referências: [design](../../openspec/changes/relatorio-de-acessos/design.md), [spec delta](../../openspec/changes/relatorio-de-acessos/specs/relatorio-de-acessos/spec.md), [ADR 0006](../adr/0006-repository-factory.md), [ADR 0007](../adr/0007-adapter-log-eventos.md).
+
+Registro e Adapter implementados neste PR. A geração HTML/PDF, Template Method
+e API de relatório continuam com Miguel; a change permanece aberta.
 
 ## Escopo do PR
 
@@ -26,7 +29,7 @@ Nunca persistir ou logar senha, hash, e-mail ou corpo da requisição.
 | UC03 create | `POST /workouts/` | `unit_of_work.transaction()` | Treino + evento atômicos; falha → 503, nada confirmado |
 | UC04 update | `PUT /workouts/{id}` | `unit_of_work.transaction()` | Idem |
 | UC07 delete | `DELETE /workouts/{id}` | `unit_of_work.transaction()` | Ler `user_id` **antes** de apagar o treino |
-| UC05 get | `GET /workouts/{id}` | Somente `accesses.add` após leitura válida | 200 só depois do evento; falha de registro → 503 |
+| UC05 get | `GET /workouts/{id}` | Leitura + `accesses.add` em `unit_of_work.transaction()` | 200 só depois do commit; falha de registro → 503 |
 | UC06 list | `GET /workouts/` | — | Sem evento |
 | UC09 relatório | — | — | Sem evento |
 
@@ -42,20 +45,22 @@ with context.repositories.unit_of_work.transaction() as tx:
 
 ## `WorkoutService`
 
-Hoje o serviço recebe apenas repositórios de treino e usuário. Sugestão:
+O serviço recebe repositórios de treino e usuário, `UnitOfWork`, `AccessLogPort`
+e relógio injetável (`clock`, padrão UTC real):
 
-- Injetar `Repositories` ou `UnitOfWork` + `AccessEventRepository` + fornecedor de instante UTC.
-- Manter validações existentes; registrar evento só após regras de negócio satisfeitas.
-- Propagar `PersistenceError` existente; mensagens públicas já tratadas em [`error_handlers`](../../app/error_handlers.py).
+- Mantém validações existentes; registra evento só após regras de negócio satisfeitas.
+- Usa os repositórios transacionais da unidade de trabalho para capturar treino e evento.
+- Propaga `PersistenceError` preservando a causa, com mensagem pública de treinos em [`error_handlers`](../../app/error_handlers.py).
 
 Rotas continuam passando pela fachada; não acumular lógica de evento na fronteira HTTP.
 
 ## Adapter de log
 
-- **Porta** (ex.: `AccessLogPort`) com método que aceita só `user_id`, operação e instante.
-- **Adapter** encapsula a biblioteca escolhida (stdlib `logging` ou outra — justificar no ADR 0007).
+- **Porta:** `AccessLogPort.record(event)`, com `AccessEvent` contendo só `user_id`, operação e instante.
+- **Adapter:** `LoggingAccessLogAdapter` encapsula `logging.Logger.info`, sem dependências novas ([ADR 0007](../adr/0007-adapter-log-eventos.md)).
 - Falha de log **não** altera status HTTP, não duplica/remove eventos e não registra dados sensíveis.
-- Chamar o adapter após confirmar o evento no repositório (ou na mesma unidade lógica de sucesso, sem recursão em caso de erro do log).
+- O serviço chama o Adapter após sair da transação com commit confirmado, sem recursão em caso de erro do log.
+- `create_app(access_log=..., clock=...)` aceita substitutos por aplicação; logger padrão `app.accesses`, nível INFO, sem configurar handlers globais.
 
 ## Testes mínimos
 
@@ -67,6 +72,8 @@ Rotas continuam passando pela fachada; não acumular lógica de evento na fronte
 
 ## Ao abrir o PR
 
-- [ ] Marcar `tasks.md` 2.1 e 2.2.
-- [ ] Completar [ADR 0007](../adr/0007-adapter-log-eventos.md).
-- [ ] Base: `develop`.
+- [x] Marcar `tasks.md` 2.1 e 2.2.
+- [x] Completar [ADR 0007](../adr/0007-adapter-log-eventos.md).
+- [x] Base: `develop`.
+
+Validação automatizada em [`test_access_recording.py`](../../tests/test_access_recording.py).

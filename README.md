@@ -130,12 +130,14 @@ Decisões: [ADR 0005](docs/adr/0005-treinos-fachada.md).
 A change [relatorio-de-acessos](openspec/changes/relatorio-de-acessos/proposal.md) acrescenta
 eventos nas operações bem-sucedidas de treino (criar, consultar individual, atualizar,
 excluir) e relatório por período. Persistência de eventos, Factory e Unit of Work já
-estão em `develop` ([ADR 0006](docs/adr/0006-repository-factory.md)). Registro nas
-rotas e geração do relatório seguem os guias em [docs/sprint4/](docs/sprint4/README.md).
+estão implementados ([ADR 0006](docs/adr/0006-repository-factory.md)). O serviço de
+treinos registra eventos e usa o Adapter de log após o commit
+([ADR 0007](docs/adr/0007-adapter-log-eventos.md)). A geração do relatório permanece
+com Miguel; os guias estão em [docs/sprint4/](docs/sprint4/README.md).
 
 | Operação | Endpoint | Situação |
 | --- | --- | --- |
-| Evento após UC03–UC07 | rotas `/workouts/` | **Luigi** (ver guia) |
+| Evento após UC03, UC04, UC05 e UC07 | criar, consultar por ID, atualizar e excluir em `/workouts/` | implementado; listagens sem evento |
 | Relatório HTML/PDF | `GET /statistics/accesses?start=&end=&format=html\|pdf` | **Miguel** (ver guia) |
 | Contar entidades | `GET /statistics/entities` | implementado (sem eventos) |
 

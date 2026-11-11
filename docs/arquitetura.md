@@ -2,9 +2,9 @@
 
 ## Estado atual — Sprint 4 (integração)
 
-API local Python 3.12/FastAPI/Pydantic. Usuários, treinos e **persistência de
-eventos de acesso** (sem captura automática nas rotas nem relatório HTTP ainda)
-compõem o estado após o PR de repositórios. A change OpenSpec
+API local Python 3.12/FastAPI/Pydantic. Usuários, treinos, captura e persistência de
+eventos de acesso e Adapter de log estão implementados. O relatório HTTP permanece
+pendente com Miguel. A change OpenSpec
 [relatorio-de-acessos](../openspec/changes/relatorio-de-acessos/proposal.md)
 define o contrato completo; aplicativo mobile, PostgreSQL e treinador IA seguem
 futuros. [ADR 0005](adr/0005-treinos-fachada.md) e [0006](adr/0006-repository-factory.md)
@@ -27,7 +27,10 @@ flowchart TD
     US --> UR[UserRepository]
     WS --> UR
     WS --> WR[WorkoutRepository]
-    WS -.->|PR Luigi| UoW[UnitOfWork]
+    WS --> UoW[UnitOfWork]
+    WS -->|após commit| LP[AccessLogPort]
+    LP --> LA[LoggingAccessLogAdapter]
+    LA --> LOG[logging.Logger]
     UoW --> WR
     UoW --> AR[AccessEventRepository]
     R --> UR
@@ -45,10 +48,11 @@ flowchart TD
 ```
 
 Serviços consomem protocolos em `ports`; a composição escolhe implementações.
-`WorkoutService` ainda não grava eventos — isso usa `unit_of_work.transaction()`
+`WorkoutService` grava eventos usando `unit_of_work.transaction()`
 conforme [design da change](../openspec/changes/relatorio-de-acessos/design.md).
-A fachada permanece sem estado de negócio. Adapter de log e `GET
-/statistics/accesses` entram nos PRs seguintes.
+A fachada permanece sem estado de negócio. O Adapter registra somente proprietário,
+operação e instante UTC após o commit; falha auxiliar não altera o sucesso
+([ADR 0007](adr/0007-adapter-log-eventos.md)). `GET /statistics/accesses` fica no PR de Miguel.
 
 ### Arquitetura física atual
 
