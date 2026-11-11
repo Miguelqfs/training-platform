@@ -1,58 +1,61 @@
-# Projeto: usuários, treinos e fachada
+# Projeto: usuários, treinos, eventos e fachada
 
 ## Pacotes e responsabilidades
 
 | Módulo | Responsabilidade |
 | --- | --- |
-| `app/main.py` | Compor uma aplicação e seus dois repositórios com a mesma configuração. |
+| `app/main.py` | Resolver armazenamento, criar a família de repositórios via fábrica e compor `ApplicationContext`. |
+| `app/repositories.py` | Abstract Factory (`RepositoryFactory`), agregado `Repositories` e unidades de trabalho RAM/SQLite. |
+| `app/unit_of_work.py` | Contrato de negócio para escrita coordenada de treino e evento. |
+| `app/accesses/domain.py` | Entidade `AccessEvent`, normalização UTC e intervalo semiaberto. |
+| `app/accesses/ports.py`, `app/users/ports.py`, `app/workouts/ports.py` | Protocolos consumidos pelos serviços (camada de negócio). |
+| `app/accesses/repository.py`, `app/users/repository.py`, `app/workouts/repository.py` | Implementações RAM/SQLite; módulos antigos reexportam os protocolos. |
 | `app/dependencies.py` | Obter o contexto da aplicação que recebeu a requisição. |
 | `app/routers/`, `app/schemas.py`, `app/workouts/schemas.py` | Validar o contrato HTTP e publicar somente os campos públicos. |
 | `app/facade.py` | Reunir operações em uma fachada única por processo, delegando aos serviços do contexto. |
 | `app/users/service.py`, `app/users/credentials.py` | Regras de usuários, normalização e hash. |
-| `app/workouts/service.py`, `app/workouts/policy.py` | Regras e limites de treinos, existência do vínculo e erros de negócio. |
-| `app/users/domain.py`, `app/workouts/domain.py` | Entidades, DTOs congelados e exceções de domínio. |
-| `app/users/repository.py`, `app/workouts/repository.py` | Protocolos e implementações RAM/SQLite. |
-| `app/users/factory.py` | Resolver seleção de armazenamento; preservar a fábrica pública de usuários. |
+| `app/workouts/service.py`, `app/workouts/policy.py` | Regras e limites de treinos; **registro de eventos e relatório** entram nos PRs de Luigi e Miguel. |
+| `app/users/factory.py` | Resolver `USER_STORAGE` / `USER_DATABASE`; preservar `create_user_repository` para testes legados. |
 | `app/storage.py` | Abrir/fechar conexões SQLite, ativar FK e delimitar transações. |
 | `app/error_handlers.py` | Traduzir validação, ausência e indisponibilidade sem expor dados internos. |
 
 ## Diagrama de classes de projeto
 
-![Diagrama de classes da Sprint 3](diagramas/diagrama-de-classes.png)
+![Diagrama de classes da Sprint 4](diagramas/diagrama-de-classes.png)
 
 [Fonte PlantUML](diagramas/classes-analise-usuarios.puml). O nome histórico do
-arquivo foi preservado; o conteúdo representa as classes atuais. Os DTOs têm
-seus atributos omitidos nesta visão para manter a leitura. Os contratos completos ficam no
-[ADR 0005](adr/0005-treinos-fachada.md) e nas especificações de
-[treinos](../openspec/specs/treinos/spec.md) e
-[fachada](../openspec/specs/fachada/spec.md).
+arquivo foi preservado. Participantes em cinza (`#TECHNOLOGY`) são contratos
+previstos na change [relatorio-de-acessos](../openspec/changes/relatorio-de-acessos/proposal.md)
+e ainda não presentes no código. Os contratos de treinos e fachada da Sprint 3
+permanecem nos [ADRs 0005](adr/0005-treinos-fachada.md) e [0006](adr/0006-repository-factory.md).
 
 ### Validação e tratamento de exceções
 
 ![Exceções de usuários e treinos](diagramas/excecoes-validacao.png)
 
 [Fonte PlantUML](diagramas/excecoes-validacao.puml). Esta visão complementar
-preserva a hierarquia `InvalidCredentialsError` → `InvalidLoginError` /
-`InvalidPasswordError` da Sprint 2 e apresenta as exceções da Sprint 3.
-`WorkoutService` sinaliza a primeira regra inválida; erros de ausência são 404,
-indisponibilidade é 503 e duplicidade de usuário continua 409. As setas à
-fronteira representam a tradução de exceções, não imports HTTP no domínio.
+permanece da Sprint 3 até revisão conjunta com os novos fluxos de relatório (503
+na geração, 422 no período). `WorkoutService` sinaliza a primeira regra inválida;
+erros de ausência são 404, indisponibilidade é 503 e duplicidade de usuário
+continua 409.
 
 ## Padrões implementados
 
 | Padrão | Participantes reais | Como verificar |
 | --- | --- | --- |
-| Singleton | `FacadeSingletonController`, `_instance`, `_lock`, `__new__`, `get_instance` | Construtor e accessor retornam a mesma instância, inclusive na primeira criação concorrente em processo novo. |
-| Facade | Rotas como clientes, `FacadeSingletonController` como fachada, `UserService` e `WorkoutService` como subsistemas | Todas as oito operações passam pela fachada; substitutos nos testes observam a chamada e o contexto. |
-| Contratos de persistência | `UserRepository`, `WorkoutRepository`, respectivas implementações RAM/SQLite | Serviços recebem protocolos; os testes também usam implementações independentes. |
+| Singleton | `FacadeSingletonController`, `_instance`, `_lock`, `__new__`, `get_instance` | Construtor e accessor retornam a mesma instância no processo. |
+| Facade | Rotas como clientes, `FacadeSingletonController`, `UserService` e `WorkoutService` | Operações atuais passam pela fachada; testes usam substitutos. |
+| Repository | `UserRepository`, `WorkoutRepository`, `AccessEventRepository` em `ports`; implementações em `repository.py` | Serviços dependem de protocolos; `tests/test_access_repositories.py` e contratos de treinos/usuários. |
+| Abstract Factory | `repository_factory`, `RepositoryFactory`, `MemoryRepositoryFactory`, `SQLiteRepositoryFactory`, `Repositories` | `create_app` seleciona família RAM ou SQLite; `tests/test_facade.py` cobre configuração. |
+| Unit of Work | `UnitOfWork`, `TransactionRepositories`, `MemoryUnitOfWork`, `SQLiteUnitOfWork` | Escrita coordenada treino + evento em um bloco; testes de commit e rollback em `test_access_repositories.py`. |
+| Adapter | *Planejado* — porta de log sem dados sensíveis | ADR e implementação no PR de Luigi (`tasks.md` 2.2). |
+| Template Method | *Planejado* — agregação + renderização HTML/PDF | ADR/contrato público no PR de Miguel (`tasks.md` 3.x). |
 
-`ApplicationContext` mantém referências imutáveis aos serviços de uma aplicação.
-A fachada não guarda esse contexto. `count_entities(context) -> int` soma
-usuários (dos dois papéis) e treinos a partir dos repositórios; não há contador
-global. Duas aplicações RAM são independentes; o mesmo arquivo SQLite é
-compartilhado intencionalmente. A contagem não promete uma fotografia
-transacional única durante mutações concorrentes nas duas coleções.
+`ApplicationContext` mantém serviços e o agregado `Repositories` de uma aplicação.
+A fachada não guarda contexto. `count_entities` soma usuários e treinos apenas;
+eventos não entram na contagem (RF da change). Duas aplicações RAM isolam eventos;
+o mesmo arquivo SQLite compartilha eventos confirmados.
 
-Os [ADRs 0003](adr/0003-validacao-persistencia.md) e
-[0004](adr/0004-revisao-entrega-1.md) documentam as decisões anteriores.
-Adapter, Template Method, Command e Memento permanecem fora desta sprint.
+Os [ADRs 0003](adr/0003-validacao-persistencia.md)–[0004](adr/0004-revisao-entrega-1.md)
+registram entregas anteriores; o [0006](adr/0006-repository-factory.md) registra
+Factory e repositório de eventos. Command e Memento continuam fora do escopo.
