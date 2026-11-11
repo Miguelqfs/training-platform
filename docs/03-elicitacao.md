@@ -77,3 +77,12 @@ Elicitação é a coleta sistemática de necessidades e regras com pessoas e fon
 | Análise documental | Restrições de segurança, falha e substituição de armazenamento | NF-SEG-01, NF-CON-01, NF-MAN-01 |
 
 **Próxima validação:** consultar mais alunos para verificar a frequência de P1, P2 e P3 e detalhar o comportamento do agente de IA. Uma entrevista individual não permite generalizar seus resultados.
+
+## Ressalva — Sprint 4 (relatório de acessos)
+
+A Sprint 4 introduz estatísticas de **uso de operações de treino** na API, conforme
+enunciado da disciplina. Os eventos associam-se ao **proprietário do treino** no
+cadastro, não a um usuário autenticado na requisição. O relatório não mede pessoas
+únicas, sessões ou acessos históricos anteriores à implantação. Essa decisão
+complementa o protótipo local já documentado em requisitos de usuários, sem
+substituir a validação empírica prevista acima.
