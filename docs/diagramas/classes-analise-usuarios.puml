@@ -2,136 +2,136 @@
 !pragma layout smetana
 skinparam classAttributeIconSize 0
 skinparam packageStyle rectangle
-skinparam defaultFontSize 13
+skinparam defaultFontSize 12
 hide empty members
 
-title Sprint 3 — classes de projeto
+title Sprint 4 — classes de projeto (integração em andamento)
 
 package "Fronteira e composição" {
   class "routers/users, workouts, statistics" as Routes <<boundary>>
-  class "main.create_app" as App <<composition>>
+  class "main.create_app" as App <<composition>> {
+    +repository_factory(storage, path)
+  }
   class ApplicationContext <<frozen>> {
     +users: UserService
     +workouts: WorkoutService
+    +repositories: Repositories
   }
   class FacadeSingletonController <<Singleton, Facade>> {
     -{static} _instance
     -{static} _lock: Lock
     +{static} get_instance(): FacadeSingletonController
-    +register_user(context, registration): User
-    +list_users(context): User[]
-    +create_workout(context, registration): Workout
-    +get_workout(context, workout_id): Workout
-    +list_workouts(context): Workout[]
-    +update_workout(context, workout_id, update): Workout
-    +delete_workout(context, workout_id): None
     +count_entities(context): int
+    ..
+    operações de usuários e treinos
   }
 }
 
-package "Serviços" {
-  class UserService <<control>> {
-    +add_user(registration: UserRegistration): User
-    +list_users(): User[]
-    +count_users(): int
-  }
+package "Negócio — serviços" {
+  class UserService <<control>>
   class WorkoutService <<control>> {
-    +create_workout(registration: WorkoutRegistration): Workout
-    +get_workout(workout_id): Workout
-    +list_workouts(): Workout[]
-    +update_workout(workout_id, update: WorkoutUpdate): Workout
-    +delete_workout(workout_id): None
-    +count_workouts(): int
+    ..
+    PR Luigi: UoW + eventos
+  }
+  class "Relatório (planejado)" as ReportSvc <<control>> #TECHNOLOGY {
+    Template Method + agregação
+    PR Miguel
   }
 }
 
-package "Contratos e persistência" {
-  interface UserRepository <<Protocol>> {
-    +add(data: NewUser): User
-    +list_users(): User[]
-    +get_by_id(user_id): User | None
-    +count(): int
+package "Negócio — domínio" {
+  class User <<frozen>>
+  class Workout <<frozen>>
+  class AccessEvent <<frozen>> {
+    +user_id: int
+    +operation: Operation
+    +occurred_at: datetime (UTC)
   }
+  enum UserRole
+  class PersistenceError <<exception>>
+}
+
+package "Negócio — portas" {
+  interface UserRepository <<Protocol>>
   interface WorkoutRepository <<Protocol>> {
-    +add(data: WorkoutRegistration): Workout
-    +get_by_id(workout_id): Workout | None
-    +list_workouts(): Workout[]
-    +update(workout_id, data: WorkoutUpdate): Workout | None
-    +delete(workout_id): bool
-    +count(): int
+    +transaction()
   }
+  interface AccessEventRepository <<Protocol>> {
+    +add(event)
+    +list_between(start, end)
+  }
+  interface UnitOfWork <<Protocol>> {
+    +transaction(): TransactionRepositories
+  }
+  interface "AccessLogPort (planejado)" as LogPort #TECHNOLOGY
+  class TransactionRepositories <<frozen>>
+}
+
+package "Infraestrutura — persistência" {
+  class Repositories <<frozen>> {
+    +users
+    +workouts
+    +accesses
+    +unit_of_work
+  }
+  interface RepositoryFactory <<Protocol>>
+  class MemoryRepositoryFactory
+  class SQLiteRepositoryFactory
+  class MemoryUnitOfWork
+  class SQLiteUnitOfWork
   class MemoryUserRepository
   class SQLiteUserRepository
-  class MemoryWorkoutRepository {
-    -_next_id: int
-    -_lock: Lock
-  }
+  class MemoryWorkoutRepository
   class SQLiteWorkoutRepository
-  class "storage.sqlite_connection" as Connection <<module>> {
-    +sqlite_connection(path)
-  }
+  class MemoryAccessEventRepository
+  class SQLiteAccessEventRepository
+  class "LogAdapter (planejado)" as LogAdapter #TECHNOLOGY
+  class "storage.sqlite_connection" as Connection <<module>>
 }
 
-package "Domínio" {
-  class User <<frozen>> {
-    +id: int
-    +username: str
-    +email: str
-    +role: UserRole
-    -password_hash: str
-  }
-  enum UserRole {
-    STUDENT
-    ADMIN
-  }
-  class Workout <<frozen>> {
-    +id: int
-    +user_id: int
-    +name: str
-    +description: str
-  }
-  class UserRegistration <<frozen DTO>>
-  class NewUser <<frozen DTO>>
-  class WorkoutRegistration <<frozen DTO>>
-  class WorkoutUpdate <<frozen DTO>>
-  class PersistenceError <<exception>> {
-    +public_message: str
-  }
-}
-
-App ..> ApplicationContext : cria por aplicação
+App ..> RepositoryFactory : seleciona
+RepositoryFactory ..> Repositories : create()
+App ..> ApplicationContext : monta serviços + repositórios
 Routes --> FacadeSingletonController
-Routes ..> ApplicationContext : obtém de request.app
+Routes ..> ApplicationContext : request.app.state.context
 FacadeSingletonController ..> ApplicationContext : recebe, não guarda
 ApplicationContext --> UserService
 ApplicationContext --> WorkoutService
-FacadeSingletonController ..> UserService : delega
-FacadeSingletonController ..> WorkoutService : delega
+ApplicationContext --> Repositories
+FacadeSingletonController ..> UserService
+FacadeSingletonController ..> WorkoutService
 UserService --> UserRepository
 WorkoutService --> WorkoutRepository
-WorkoutService --> UserRepository : verifica vínculo
+WorkoutService ..> UnitOfWork : mutações + evento (Luigi)
+ReportSvc ..> AccessEventRepository : Miguel
+ReportSvc ..> FacadeSingletonController : rota /statistics/accesses
+MemoryRepositoryFactory ..|> RepositoryFactory
+SQLiteRepositoryFactory ..|> RepositoryFactory
 MemoryUserRepository ..|> UserRepository
 SQLiteUserRepository ..|> UserRepository
 MemoryWorkoutRepository ..|> WorkoutRepository
 SQLiteWorkoutRepository ..|> WorkoutRepository
+MemoryAccessEventRepository ..|> AccessEventRepository
+SQLiteAccessEventRepository ..|> AccessEventRepository
+Repositories --> UserRepository
+Repositories --> WorkoutRepository
+Repositories --> AccessEventRepository
+Repositories --> UnitOfWork
+MemoryUnitOfWork ..|> UnitOfWork
+SQLiteUnitOfWork ..|> UnitOfWork
 SQLiteUserRepository ..> Connection
 SQLiteWorkoutRepository ..> Connection
-User "1" -- "0..*" Workout : vínculo por user_id
-User --> UserRole
-UserService ..> UserRegistration
-UserService ..> NewUser : hash antes da persistência
-WorkoutService ..> WorkoutRegistration
-WorkoutService ..> WorkoutUpdate
-SQLiteUserRepository ..> PersistenceError
-SQLiteWorkoutRepository ..> PersistenceError
-note bottom of Connection
-  Uma conexão por operação, FK habilitada,
-  transação confirmada ou revertida e fechamento.
-  users + workouts no mesmo arquivo.
+SQLiteAccessEventRepository ..> Connection
+LogAdapter ..|> LogPort
+WorkoutService ..> LogPort : opcional, Luigi
+User "1" -- "0..*" Workout : user_id
+AccessEvent ..> User : proprietário (id)
+note bottom of RepositoryFactory
+  Abstract Factory: família RAM ou SQLite
+  coerente + mesma UoW. ADR 0006.
 end note
-note bottom of FacadeSingletonController
-  Uma instância por processo; construção com trava.
-  Sem contexto ou dados de negócio armazenados.
-  count_entities = usuários + treinos do contexto.
+note bottom of ReportSvc
+  Classes ainda não no repositório;
+  contrato em openspec/changes/relatorio-de-acessos.
 end note
 @enduml
