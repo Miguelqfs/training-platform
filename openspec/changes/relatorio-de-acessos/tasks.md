@@ -11,8 +11,8 @@ Esta lista planeja a sprint; itens permanecem abertos até serem concluídos e v
 
 ## Registro e Adapter
 
-- [ ] 2.1 Implementar registro transacional nas quatro operações elegíveis, com testes de sucesso, exclusões e falhas em RAM e SQLite.
-- [ ] 2.2 Registrar ADR do Adapter e implementar porta e Adapter de log auxiliar sem dados sensíveis, com testes de falha.
+- [x] 2.1 Implementar registro transacional nas quatro operações elegíveis, com testes de sucesso, exclusões e falhas em RAM e SQLite.
+- [x] 2.2 Registrar ADR do Adapter e implementar porta e Adapter de log auxiliar sem dados sensíveis, com testes de falha.
 
 ## Relatórios
 

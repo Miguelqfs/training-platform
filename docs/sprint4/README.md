@@ -3,14 +3,14 @@
 Integração da change [relatorio-de-acessos](../../openspec/changes/relatorio-de-acessos/proposal.md).
 Este índice orienta Luigi, Miguel e o fechamento da release **v0.3.0**.
 
-## Estado no `develop`
+## Estado das entregas
 
 | Entrega | Responsável | Situação |
 | --- | --- | --- |
 | OpenSpec e design | Artur | Integrado (#16) |
 | Repository, Factory, UoW, repos de eventos | Davi | Integrado (#17) |
 | Projeto, arquitetura e diagrama (parcial) | Rafael | Integrado (#19) |
-| Registro nas operações + Adapter | Luigi | Pendente |
+| Registro nas operações + Adapter | Luigi | Implementado neste PR; aguardando revisão e integração |
 | Template Method + HTML/PDF + API relatório | Miguel | Pendente |
 | UCs, elicitação, archive, release | Rafael | Parcial — ver [fechamento-checklist](fechamento-checklist.md) |
 

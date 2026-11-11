@@ -14,7 +14,8 @@
 | `app/routers/`, `app/schemas.py`, `app/workouts/schemas.py` | Validar o contrato HTTP e publicar somente os campos públicos. |
 | `app/facade.py` | Reunir operações em uma fachada única por processo, delegando aos serviços do contexto. |
 | `app/users/service.py`, `app/users/credentials.py` | Regras de usuários, normalização e hash. |
-| `app/workouts/service.py`, `app/workouts/policy.py` | Regras e limites de treinos; **registro de eventos e relatório** entram nos PRs de Luigi e Miguel. |
+| `app/workouts/service.py`, `app/workouts/policy.py` | Regras e limites de treinos; gravação transacional de eventos e chamada do log após commit. |
+| `app/accesses/logging_adapter.py` | `LoggingAccessLogAdapter` adapta `AccessLogPort` ao `logging.Logger` da biblioteca padrão. |
 | `app/users/factory.py` | Resolver `USER_STORAGE` / `USER_DATABASE`; preservar `create_user_repository` para testes legados. |
 | `app/storage.py` | Abrir/fechar conexões SQLite, ativar FK e delimitar transações. |
 | `app/error_handlers.py` | Traduzir validação, ausência e indisponibilidade sem expor dados internos. |
@@ -25,8 +26,10 @@
 
 [Fonte PlantUML](diagramas/classes-analise-usuarios.puml). O nome histórico do
 arquivo foi preservado. Participantes em cinza (`#TECHNOLOGY`) são contratos
-previstos na change [relatorio-de-acessos](../openspec/changes/relatorio-de-acessos/proposal.md)
-e ainda não presentes no código. Os contratos de treinos e fachada da Sprint 3
+previstos no handoff da change [relatorio-de-acessos](../openspec/changes/relatorio-de-acessos/proposal.md).
+A atualização gráfica final fica com Rafael após a integração; o Adapter já está
+implementado conforme a tabela abaixo e o [ADR 0007](adr/0007-adapter-log-eventos.md).
+Os contratos de treinos e fachada da Sprint 3
 permanecem nos [ADRs 0005](adr/0005-treinos-fachada.md) e [0006](adr/0006-repository-factory.md).
 
 ### Validação e tratamento de exceções
@@ -48,7 +51,7 @@ continua 409.
 | Repository | `UserRepository`, `WorkoutRepository`, `AccessEventRepository` em `ports`; implementações em `repository.py` | Serviços dependem de protocolos; `tests/test_access_repositories.py` e contratos de treinos/usuários. |
 | Abstract Factory | `repository_factory`, `RepositoryFactory`, `MemoryRepositoryFactory`, `SQLiteRepositoryFactory`, `Repositories` | `create_app` seleciona família RAM ou SQLite; `tests/test_facade.py` cobre configuração. |
 | Unit of Work | `UnitOfWork`, `TransactionRepositories`, `MemoryUnitOfWork`, `SQLiteUnitOfWork` | Escrita coordenada treino + evento em um bloco; testes de commit e rollback em `test_access_repositories.py`. |
-| Adapter | *Planejado* — porta de log sem dados sensíveis | ADR e implementação no PR de Luigi (`tasks.md` 2.2). |
+| Adapter | `WorkoutService` (cliente), `AccessLogPort` (Target), `LoggingAccessLogAdapter` (Adapter), `logging.Logger` (Adaptee) | `test_access_recording.py`: log real após commit e substituto com falha; somente proprietário, operação e instante UTC. |
 | Template Method | *Planejado* — agregação + renderização HTML/PDF | ADR/contrato público no PR de Miguel (`tasks.md` 3.x). |
 
 `ApplicationContext` mantém serviços e o agregado `Repositories` de uma aplicação.
@@ -58,6 +61,6 @@ o mesmo arquivo SQLite compartilha eventos confirmados.
 
 Os [ADRs 0003](adr/0003-validacao-persistencia.md)–[0004](adr/0004-revisao-entrega-1.md)
 registram entregas anteriores; o [0006](adr/0006-repository-factory.md) registra
-Factory e repositório de eventos. Esboços [0007](adr/0007-adapter-log-eventos.md) e
-[0008](adr/0008-relatorio-template-method.md) completam nos PRs de Luigi e Miguel.
+Factory e repositório de eventos. O [0007](adr/0007-adapter-log-eventos.md) registra
+o Adapter; o esboço [0008](adr/0008-relatorio-template-method.md) permanece com Miguel.
 Handoff: [docs/sprint4/README.md](sprint4/README.md). Command e Memento continuam fora do escopo.
