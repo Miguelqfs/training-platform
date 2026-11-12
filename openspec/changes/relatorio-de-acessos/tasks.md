@@ -4,7 +4,7 @@ Esta lista planeja a sprint; itens permanecem abertos até serem concluídos e v
 
 ## Contratos e persistência
 
-- [ ] 1.1 Registrar ADR dos contratos públicos de eventos, relatórios e consistência no primeiro PR que os introduzir.
+- [x] 1.1 Registrar ADR dos contratos públicos de eventos, relatórios e consistência no primeiro PR que os introduzir.
 - [x] 1.2 Registrar ADR Repository + Factory com participantes, variantes escolhidas e composição RAM/SQLite.
 - [x] 1.3 Implementar protocolo e repositórios de eventos, com testes de intervalo, persistência, banco legado e isolamento.
 - [x] 1.4 Integrar fábrica e unidade de trabalho à composição de usuários, treinos e eventos, preservando a configuração e os testes anteriores.
@@ -16,9 +16,9 @@ Esta lista planeja a sprint; itens permanecem abertos até serem concluídos e v
 
 ## Relatórios
 
-- [ ] 3.1 Implementar agregação e Template Method na camada business, com relógio controlável nos testes e resultados determinísticos.
-- [ ] 3.2 Implementar renderizadores HTML e PDF, documentar dependência PDF e testar equivalência e período vazio.
-- [ ] 3.3 Expor consulta pela fachada e API, testar validação, tipos de conteúdo e falhas, sem registrar acesso à consulta do relatório.
+- [x] 3.1 Implementar agregação e Template Method na camada business, com relógio controlável nos testes e resultados determinísticos.
+- [x] 3.2 Implementar renderizadores HTML e PDF, documentar dependência PDF e testar equivalência e período vazio.
+- [x] 3.3 Expor consulta pela fachada e API, testar validação, tipos de conteúdo e falhas, sem registrar acesso à consulta do relatório.
 
 ## Documentação e encerramento
 

@@ -132,17 +132,37 @@ eventos nas operações bem-sucedidas de treino (criar, consultar individual, at
 excluir) e relatório por período. Persistência de eventos, Factory e Unit of Work já
 estão implementados ([ADR 0006](docs/adr/0006-repository-factory.md)). O serviço de
 treinos registra eventos e usa o Adapter de log após o commit
-([ADR 0007](docs/adr/0007-adapter-log-eventos.md)). A geração do relatório permanece
-com Miguel; os guias estão em [docs/sprint4/](docs/sprint4/README.md).
+([ADR 0007](docs/adr/0007-adapter-log-eventos.md)). O Template Method gera relatórios
+HTML/PDF pela fachada e API ([ADR 0008](docs/adr/0008-relatorio-template-method.md));
+os guias estão em [docs/sprint4/](docs/sprint4/README.md).
 
 | Operação | Endpoint | Situação |
 | --- | --- | --- |
 | Evento após UC03, UC04, UC05 e UC07 | criar, consultar por ID, atualizar e excluir em `/workouts/` | implementado; listagens sem evento |
-| Relatório HTML/PDF | `GET /statistics/accesses?start=&end=&format=html\|pdf` | **Miguel** (ver guia) |
+| Relatório HTML/PDF | `GET /statistics/accesses?start=&end=&format=html\|pdf` | implementado; agregação única nos dois formatos |
 | Contar entidades | `GET /statistics/entities` | implementado (sem eventos) |
 
 Parâmetros de período: RFC 3339 com fuso explícito; intervalo semiaberto `[start, end)`.
 A consulta do relatório não registra evento. Detalhes: [UC09](docs/04-casos-de-uso/UC09-gerar-relatorio-acessos.md).
+
+O relatório mostra período UTC, total e contagens por proprietário e operação.
+Sem eventos, retorna 200 com total zero. Parâmetros ausentes ou inválidos retornam
+422; falha de leitura/geração retorna 503 com mensagem genérica. O identificador
+do proprietário não representa um cliente autenticado.
+
+Com a API local iniciada, gerar PDF do dia 11/11/2026 no fuso de São Paulo:
+
+```bash
+curl --get 'http://127.0.0.1:8000/statistics/accesses' \
+  --data-urlencode 'start=2026-11-11T00:00:00-03:00' \
+  --data-urlencode 'end=2026-11-12T00:00:00-03:00' \
+  --data-urlencode 'format=pdf' \
+  --output /tmp/relatorio-acessos.pdf
+```
+
+Para HTML, usar `format=html` e salvar com extensão `.html`. ReportLab gera PDF
+em memória, sem navegador ou conversor externo; as fontes são incorporadas.
+`pypdf` é dependência apenas de testes para conferir conteúdo e paginação.
 
 ### Verificar a documentação
 

@@ -10,8 +10,8 @@ Este índice orienta Luigi, Miguel e o fechamento da release **v0.3.0**.
 | OpenSpec e design | Artur | Integrado (#16) |
 | Repository, Factory, UoW, repos de eventos | Davi | Integrado (#17) |
 | Projeto, arquitetura e diagrama (parcial) | Rafael | Integrado (#19) |
-| Registro nas operações + Adapter | Luigi | Implementado neste PR; aguardando revisão e integração |
-| Template Method + HTML/PDF + API relatório | Miguel | Pendente |
+| Registro nas operações + Adapter | Luigi | Integrado (#21) |
+| Template Method + HTML/PDF + API relatório | Miguel | Implementado neste PR; aguardando revisão e integração |
 | UCs, elicitação, archive, release | Rafael | Parcial — ver [fechamento-checklist](fechamento-checklist.md) |
 
 ## Guias de implementação

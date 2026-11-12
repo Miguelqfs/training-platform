@@ -4,6 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from app.reports.domain import InvalidReportError, ReportGenerationError
 from app.users.domain import InvalidCredentialsError, PersistenceError
 from app.workouts.domain import (
     InvalidWorkoutError,
@@ -26,7 +27,8 @@ async def invalid_request(
 
 
 async def invalid_domain_fields(
-    request: Request, error: InvalidCredentialsError | InvalidWorkoutError
+    request: Request,
+    error: InvalidCredentialsError | InvalidWorkoutError | InvalidReportError,
 ) -> JSONResponse:
     return JSONResponse(
         status_code=HTTPStatus.UNPROCESSABLE_ENTITY, content={"detail": str(error)}
@@ -50,6 +52,15 @@ async def entity_not_found(
     )
 
 
+async def report_failure(
+    request: Request, error: ReportGenerationError
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=HTTPStatus.SERVICE_UNAVAILABLE,
+        content={"detail": ReportGenerationError.PUBLIC_MESSAGE},
+    )
+
+
 def register_error_handlers(app: FastAPI) -> None:
     app.add_exception_handler(RequestValidationError, invalid_request)
     app.add_exception_handler(InvalidCredentialsError, invalid_domain_fields)
@@ -57,3 +68,5 @@ def register_error_handlers(app: FastAPI) -> None:
     app.add_exception_handler(InvalidWorkoutError, invalid_domain_fields)
     app.add_exception_handler(UserNotFoundError, entity_not_found)
     app.add_exception_handler(WorkoutNotFoundError, entity_not_found)
+    app.add_exception_handler(InvalidReportError, invalid_domain_fields)
+    app.add_exception_handler(ReportGenerationError, report_failure)

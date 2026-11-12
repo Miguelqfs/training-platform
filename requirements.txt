@@ -3,3 +3,4 @@ uvicorn[standard]
 pydantic[email]>=2
 httpx2
 pytest
+reportlab>=4.4,<5
