@@ -1,12 +1,17 @@
 import sqlite3
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from dataclasses import FrozenInstanceError
+from unittest.mock import Mock
 
 import pytest
 
+from app.accesses.repository import MemoryAccessEventRepository
+from app.repositories import MemoryRepositoryFactory, repository_factory
 from app.storage import sqlite_connection
+from app.unit_of_work import TransactionRepositories
 from app.users.domain import NewUser, PersistenceError, UserRole
-from app.users.repository import MemoryUserRepository, SQLiteUserRepository
+from app.users.repository import SQLiteUserRepository
 from app.workouts.domain import (
     InvalidWorkoutError,
     UserNotFoundError,
@@ -15,28 +20,27 @@ from app.workouts.domain import (
     WorkoutRegistration,
     WorkoutUpdate,
 )
-from app.workouts.repository import MemoryWorkoutRepository, SQLiteWorkoutRepository
+from app.workouts.repository import SQLiteWorkoutRepository
 from app.workouts.service import WorkoutService
 
 
 @pytest.fixture(params=["memory", "sqlite"])
 def repositories(request, tmp_path):
     path = tmp_path / "domain.db"
-    users = (
-        MemoryUserRepository()
-        if request.param == "memory"
-        else SQLiteUserRepository(path)
+    return repository_factory(request.param, path).create()
+
+
+def workout_service(repositories):
+    return WorkoutService(
+        repositories.workouts,
+        repositories.users,
+        repositories.unit_of_work,
+        access_log=Mock(),
     )
-    workouts = (
-        MemoryWorkoutRepository()
-        if request.param == "memory"
-        else SQLiteWorkoutRepository(path)
-    )
-    return users, workouts
 
 
 def test_workout_repository_contract(repositories):
-    users, workouts = repositories
+    users, workouts = repositories.users, repositories.workouts
     user = users.add(NewUser("maria", "maria@example.com", UserRole.STUDENT, "hash"))
     assert workouts.count() == 0
     assert workouts.get_by_id(999) is None
@@ -57,8 +61,8 @@ def test_workout_repository_contract(repositories):
 
 @pytest.mark.parametrize("user_id", [True, False, 0, -1, 1.0, "1", None])
 def test_service_validates_id_before_fields_or_lookup(repositories, user_id):
-    users, workouts = repositories
-    service = WorkoutService(workouts, users)
+    workouts = repositories.workouts
+    service = workout_service(repositories)
     with pytest.raises(
         InvalidWorkoutError, match="ID do usuário deve ser um inteiro positivo"
     ):
@@ -87,8 +91,8 @@ def test_service_validates_id_before_fields_or_lookup(repositories, user_id):
 )
 def test_service_validates_fields_before_missing_records(repositories, case):
     name, description, message = case
-    users, workouts = repositories
-    service = WorkoutService(workouts, users)
+    workouts = repositories.workouts
+    service = workout_service(repositories)
     with pytest.raises(InvalidWorkoutError, match=message):
         service.create_workout(WorkoutRegistration(999, name, description))
     with pytest.raises(InvalidWorkoutError, match=message):
@@ -97,8 +101,8 @@ def test_service_validates_fields_before_missing_records(repositories, case):
 
 
 def test_service_handles_normalization_and_missing_records(repositories):
-    users, workouts = repositories
-    service = WorkoutService(workouts, users)
+    users = repositories.users
+    service = workout_service(repositories)
     with pytest.raises(UserNotFoundError):
         service.create_workout(WorkoutRegistration(1, "Plano"))
     users.add(NewUser("maria", "maria@example.com", UserRole.STUDENT, "hash"))
@@ -119,10 +123,10 @@ def test_service_handles_normalization_and_missing_records(repositories):
 
 
 def test_memory_concurrent_ids_never_collide_or_reuse_deleted_highest():
-    repository = MemoryWorkoutRepository()
-    users = MemoryUserRepository()
+    repositories = MemoryRepositoryFactory().create()
+    repository, users = repositories.workouts, repositories.users
     users.add(NewUser("maria", "maria@example.com", UserRole.STUDENT, "hash"))
-    service = WorkoutService(repository, users)
+    service = workout_service(repositories)
     with ThreadPoolExecutor(max_workers=16) as executor:
         workouts = list(
             executor.map(
@@ -210,7 +214,15 @@ def test_service_accepts_independent_contracts_without_inheritance():
         def count(self):
             return int(self.saved is not None)
 
-    service = WorkoutService(Workouts(), Users())
+    workouts = Workouts()
+    accesses = MemoryAccessEventRepository()
+
+    class Transactions:
+        @contextmanager
+        def transaction(self):
+            yield TransactionRepositories(workouts, accesses)
+
+    service = WorkoutService(workouts, Users(), Transactions(), access_log=Mock())
     workout = service.create_workout(WorkoutRegistration(7, " Plano "))
     assert workout == Workout(42, 7, "Plano", "")
     assert service.get_workout(42) == workout
@@ -225,14 +237,15 @@ def test_service_accepts_independent_contracts_without_inheritance():
 
 
 def test_link_lookup_failure_preserves_cause_and_uses_workout_message(monkeypatch):
-    users = MemoryUserRepository()
+    repositories = MemoryRepositoryFactory().create()
+    users = repositories.users
     original = PersistenceError("SQL/private/path")
 
     def fail(user_id):
         raise original
 
     monkeypatch.setattr(users, "get_by_id", fail)
-    service = WorkoutService(MemoryWorkoutRepository(), users)
+    service = workout_service(repositories)
     with pytest.raises(PersistenceError) as caught:
         service.create_workout(WorkoutRegistration(1, "Plano"))
     assert caught.value.__cause__ is original
@@ -259,7 +272,7 @@ def test_arbitrarily_large_ids_are_absent_not_driver_failures(storage, tmp_path)
 
 
 def test_ids_remain_monotonic_after_deleting_entire_collection(repositories):
-    users, workouts = repositories
+    users, workouts = repositories.users, repositories.workouts
     user = users.add(NewUser("maria", "maria@example.com", UserRole.STUDENT, "hash"))
     data = WorkoutRegistration(user.id, "Plano")
     first = workouts.add(data)

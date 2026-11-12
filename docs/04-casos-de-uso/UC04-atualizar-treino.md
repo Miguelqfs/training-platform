@@ -4,8 +4,9 @@
 **Ator principal previsto:** Aluno; Administrador também pode operar o protótipo.
 **Gatilho:** `PUT /workouts/{id}`.
 **Pré-condições de sucesso:** API iniciada e treino existente.
-**Requisitos:** RF09, RF12, RF15, RF16; NF-SEG-03, NF-CON-04–06,
-NF-MAN-02, NF-USA-02.
+**Requisitos:** RF09, RF12, RF15, RF16; Sprint 4: RF19, RF20, RF23.
+NF-SEG-03, NF-CON-04–06, NF-MAN-02, NF-USA-02.
+**Registro de evento:** [Luigi — guia Sprint 4](../sprint4/luigi-registro-acessos.md).
 **Interface proposta:** [TL03](../06-interface/TL03-atualizar-treino.md).
 
 ## Fluxo principal
@@ -14,7 +15,7 @@ NF-MAN-02, NF-USA-02.
 2. Envia nome obrigatório e descrição opcional ao endereço do treino.
 3. A fronteira valida ID positivo na URL e corpo; a fachada delega ao serviço.
 4. O serviço normaliza os textos e valida os mesmos limites do cadastro.
-5. O repositório substitui os dois campos mutáveis em uma transação.
+5. Em transação compartilhada, o repositório atualiza o treino e registra evento `update`.
 6. A API retorna 200 com o treino atualizado; ID, vínculo e total permanecem.
 
 ## Alternativas e exceções
@@ -29,8 +30,8 @@ NF-MAN-02, NF-USA-02.
 - **E1 — persistência (5):** 503 `Armazenamento de treinos indisponível`;
   todos os campos e demais registros permanecem como antes.
 
-**Pós-condição de sucesso:** nome e descrição substituídos; usuário e outros
-planos intactos. **Garantia em falha:** treino completo e total preservados.
+**Pós-condição de sucesso (Sprint 4):** campos substituídos e evento `update`
+para o proprietário. **Garantia em falha:** treino e eventos intactos; 503 se a transação falhar.
 
 **Exemplo:** `PUT /workouts/1` com `{"name":" Costas ","description":" remada "}`
 retorna `{"id":1,"user_id":1,"name":"Costas","description":"remada"}`.

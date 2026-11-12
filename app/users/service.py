@@ -1,6 +1,6 @@
 from app.users.credentials import hash_password, validate_credentials
 from app.users.domain import NewUser, User, UserRegistration
-from app.users.repository import UserRepository
+from app.users.ports import UserRepository
 
 
 class UserService:

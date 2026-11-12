@@ -1,56 +1,80 @@
 # Arquitetura do projeto
 
-## Estado atual — Sprint 3
+## Estado atual — Sprint 4 (integração)
 
-API local Python 3.12/FastAPI/Pydantic. Usuários e planos de treino são
-executáveis; aplicativo mobile, PostgreSQL, ORM e treinador IA são futuros.
-O [ADR 0005](adr/0005-treinos-fachada.md) registra a fachada, os novos contratos
-e o isolamento. Os [ADRs anteriores](adr/) permanecem como histórico.
+API local Python 3.12/FastAPI/Pydantic. Usuários, treinos, captura e persistência de
+eventos de acesso, Adapter de log e relatório HTTP em HTML/PDF estão implementados.
+A change OpenSpec
+[relatorio-de-acessos](../openspec/changes/relatorio-de-acessos/proposal.md)
+define o contrato completo; aplicativo mobile, PostgreSQL e treinador IA seguem
+futuros. [ADR 0005](adr/0005-treinos-fachada.md) e [0006](adr/0006-repository-factory.md)
+complementam as decisões de fachada e fábrica.
 
 ### Arquitetura lógica
 
 ```mermaid
 flowchart TD
     HTTP[Rotas e esquemas HTTP] --> F[FacadeSingletonController]
-    APP[create_app: resolve configuração e compõe contexto] --> C[ApplicationContext por aplicação]
+    APP[create_app + repository_factory] --> C[ApplicationContext]
     HTTP --> C
     F --> US[UserService]
     F --> WS[WorkoutService]
     C --> US
     C --> WS
-    US --> UR[UserRepository: protocolo]
+    C --> R[Repositories]
+    FACT[RepositoryFactory RAM ou SQLite] --> R
+    APP --> FACT
+    US --> UR[UserRepository]
     WS --> UR
-    WS --> WR[WorkoutRepository: protocolo]
-    UR --> UM[MemoryUserRepository]
-    UR --> UDB[SQLiteUserRepository]
-    WR --> WM[MemoryWorkoutRepository]
-    WR --> WDB[SQLiteWorkoutRepository]
-    UDB --> SQL[sqlite_connection: FK e transação]
-    WDB --> SQL
+    WS --> WR[WorkoutRepository]
+    WS --> UoW[UnitOfWork]
+    WS -->|após commit| LP[AccessLogPort]
+    LP --> LA[LoggingAccessLogAdapter]
+    LA --> LOG[logging.Logger]
+    UoW --> WR
+    UoW --> AR[AccessEventRepository]
+    R --> UR
+    R --> WR
+    R --> AR
+    R --> UoW
+    UR --> UM[Memory / SQLite users]
+    WR --> WM[Memory / SQLite workouts]
+    AR --> AM[Memory / SQLite access_events]
+    AM --> SQL[sqlite_connection]
+    WM --> SQL
+    UM --> SQL
+    F --> RS[AccessReportService]
+    C --> RS
+    RS --> RT[AccessReportTemplate]
+    RT --> AR
+    RT --> HTML[HtmlAccessReport]
+    RT --> PDF[PdfAccessReport + ReportLab]
 ```
 
-As setas de protocolo para implementação indicam alternativas de composição;
-serviços não importam classes concretas. A fachada delega ao contexto recebido,
-sem armazená-lo. SQL e coleções pertencem aos repositórios. Os tratadores da
-fronteira traduzem exceções sem publicar causas, caminhos ou entrada sensível.
+Serviços consomem protocolos em `ports`; a composição escolhe implementações.
+`WorkoutService` grava eventos usando `unit_of_work.transaction()`
+conforme [design da change](../openspec/changes/relatorio-de-acessos/design.md).
+A fachada permanece sem estado de negócio. O Adapter registra somente proprietário,
+operação e instante UTC após o commit; falha auxiliar não altera o sucesso
+([ADR 0007](adr/0007-adapter-log-eventos.md)). `GET /statistics/accesses` delega ao
+Template Method: período UTC, uma leitura, agregação imutável e renderização.
+HTML e PDF exibem os mesmos dados; falhas retornam 503 com mensagem genérica
+([ADR 0008](adr/0008-relatorio-template-method.md)).
 
 ### Arquitetura física atual
 
 ```mermaid
 flowchart LR
-    CLI[Cliente HTTP local ou navegador em /docs] -->|HTTP localhost:8000| API[Processo Python: Uvicorn + FastAPI]
-    API --> RAM[Coleções RAM próprias da aplicação]
-    API -->|sqlite3: conexões por operação| DB[(Arquivo SQLite local: users + workouts)]
+    CLI[Cliente HTTP local ou /docs] -->|HTTP| API[Uvicorn + FastAPI]
+    API --> RAM[Coleções RAM: users, workouts, events]
+    API -->|sqlite3| DB[(SQLite: users + workouts + access_events)]
 ```
 
-RAM e SQLite são alternativas escolhidas na inicialização. USER_STORAGE aceita
-memory (padrão) ou sqlite; USER_DATABASE indica o arquivo. Argumentos explícitos
-de create_app têm precedência sobre o ambiente. O diretório precisa existir.
-Não há servidor de banco nem serviço externo necessário. RAM é volátil; SQLite
-reabre tabelas existentes sem apagar registros. Mesmo arquivo compartilha dados
-entre aplicações/processos; a fachada permanece única apenas dentro do processo.
-A contagem consulta duas coleções em sequência, sem fotografia transacional
-entre elas sob concorrência.
+RAM e SQLite são alternativas na inicialização (`USER_STORAGE`, `USER_DATABASE`).
+SQLite cria `access_events` sem alterar tabelas legadas. Eventos não são
+backfilled em bancos antigos. RAM perde eventos ao reiniciar; arquivo
+compartilhado propaga eventos confirmados entre processos. A contagem em
+`/statistics/entities` ignora eventos.
 
 ### RNFs e decisões verificáveis
 

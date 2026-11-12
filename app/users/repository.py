@@ -1,7 +1,6 @@
 import sqlite3
 from pathlib import Path
 from threading import Lock
-from typing import Protocol
 
 from app.storage import sqlite_connection
 from app.users.domain import (
@@ -11,13 +10,7 @@ from app.users.domain import (
     User,
     UserRole,
 )
-
-
-class UserRepository(Protocol):
-    def add(self, data: NewUser) -> User: ...
-    def list_users(self) -> list[User]: ...
-    def get_by_id(self, user_id: int) -> User | None: ...
-    def count(self) -> int: ...
+from app.users.ports import UserRepository as UserRepository
 
 
 class MemoryUserRepository:

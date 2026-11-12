@@ -1,17 +1,24 @@
 from dataclasses import dataclass
 from threading import Lock
-from typing import ClassVar, Self
+from typing import TYPE_CHECKING, ClassVar, Self
 
+from app.reports.domain import AccessReportRequest, GeneratedReport
+from app.reports.service import AccessReportService
 from app.users.domain import User, UserRegistration
 from app.users.service import UserService
 from app.workouts.domain import Workout, WorkoutRegistration, WorkoutUpdate
 from app.workouts.service import WorkoutService
+
+if TYPE_CHECKING:
+    from app.repositories import Repositories
 
 
 @dataclass(frozen=True)
 class ApplicationContext:
     users: UserService
     workouts: WorkoutService
+    reports: AccessReportService
+    repositories: "Repositories | None" = None
 
 
 class FacadeSingletonController:
@@ -58,3 +65,8 @@ class FacadeSingletonController:
 
     def count_entities(self, context: ApplicationContext) -> int:
         return context.users.count_users() + context.workouts.count_workouts()
+
+    def generate_access_report(
+        self, context: ApplicationContext, request: AccessReportRequest
+    ) -> GeneratedReport:
+        return context.reports.generate(request)

@@ -4,8 +4,9 @@
 **Ator principal previsto:** Aluno; Administrador também pode operar o protótipo.
 **Gatilho:** `POST /workouts/`.
 **Pré-condições de sucesso:** API iniciada e usuário já cadastrado no contexto.
-**Requisitos:** RF08, RF09, RF14, RF15, RF16; NF-SEG-03, NF-CON-04–06,
-NF-MAN-02, NF-USA-02.
+**Requisitos:** RF08, RF09, RF14, RF15, RF16; Sprint 4: RF19, RF20, RF23.
+NF-SEG-03, NF-CON-04–06, NF-MAN-02, NF-USA-02.
+**Registro de evento:** [Luigi — guia Sprint 4](../sprint4/luigi-registro-acessos.md).
 **Interface proposta:** [TL02](../06-interface/TL02-cadastrar-treino.md).
 
 ## Fluxo principal
@@ -15,7 +16,7 @@ NF-MAN-02, NF-USA-02.
 3. A fachada delega ao serviço do contexto. Nome e descrição perdem espaços
    externos; nome tem 1–100 caracteres e descrição tem até 1.000.
 4. O serviço verifica se o usuário existe no mesmo repositório de usuários.
-5. O repositório gera ID monotônico e confirma o treino.
+5. Em transação compartilhada, o repositório confirma o treino e registra evento `create` para o proprietário.
 6. A API retorna 201 com os quatro campos e a contagem aumenta em um.
 
 ## Alternativas e exceções
@@ -29,9 +30,9 @@ NF-MAN-02, NF-USA-02.
 - **E1 — falha de persistência, inclusive busca do vínculo:** 503
   `Armazenamento de treinos indisponível`, preservando causa internamente.
 
-**Pós-condição de sucesso:** um treino adicional ligado ao mesmo usuário,
-sem modificar o usuário. **Garantia em falha:** registros e total anteriores
-preservados; SQLite reverte a mutação.
+**Pós-condição de sucesso (Sprint 4):** treino adicional e evento `create` consultável,
+sem modificar o usuário. **Garantia em falha:** treino e eventos anteriores
+preservados; falha na transação responde 503 (RF23).
 
 **Exemplo:** `{"user_id":1,"name":" Peito ","description":" supino "}`
 retorna `{"id":1,"user_id":1,"name":"Peito","description":"supino"}`.
