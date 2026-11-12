@@ -16,6 +16,8 @@
 | `app/users/service.py`, `app/users/credentials.py` | Regras de usuários, normalização e hash. |
 | `app/workouts/service.py`, `app/workouts/policy.py` | Regras e limites de treinos; gravação transacional de eventos e chamada do log após commit. |
 | `app/accesses/logging_adapter.py` | `LoggingAccessLogAdapter` adapta `AccessLogPort` ao `logging.Logger` da biblioteca padrão. |
+| `app/reports/domain.py`, `app/reports/template.py`, `app/reports/service.py` | Contratos imutáveis, agregação, Template Method e seleção de formato na camada de negócio. |
+| `app/reports/renderers.py`, `app/reports/schemas.py` | Renderização HTML/ReportLab PDF e validação RFC 3339 na fronteira HTTP. |
 | `app/users/factory.py` | Resolver `USER_STORAGE` / `USER_DATABASE`; preservar `create_user_repository` para testes legados. |
 | `app/storage.py` | Abrir/fechar conexões SQLite, ativar FK e delimitar transações. |
 | `app/error_handlers.py` | Traduzir validação, ausência e indisponibilidade sem expor dados internos. |
@@ -27,8 +29,9 @@
 [Fonte PlantUML](diagramas/classes-analise-usuarios.puml). O nome histórico do
 arquivo foi preservado. Participantes em cinza (`#TECHNOLOGY`) são contratos
 previstos no handoff da change [relatorio-de-acessos](../openspec/changes/relatorio-de-acessos/proposal.md).
-A atualização gráfica final fica com Rafael após a integração; o Adapter já está
-implementado conforme a tabela abaixo e o [ADR 0007](adr/0007-adapter-log-eventos.md).
+A atualização gráfica final fica com Rafael após a integração; Adapter e Template
+Method já estão implementados conforme a tabela abaixo e os
+[ADRs 0007](adr/0007-adapter-log-eventos.md) e [0008](adr/0008-relatorio-template-method.md).
 Os contratos de treinos e fachada da Sprint 3
 permanecem nos [ADRs 0005](adr/0005-treinos-fachada.md) e [0006](adr/0006-repository-factory.md).
 
@@ -47,12 +50,12 @@ continua 409.
 | Padrão | Participantes reais | Como verificar |
 | --- | --- | --- |
 | Singleton | `FacadeSingletonController`, `_instance`, `_lock`, `__new__`, `get_instance` | Construtor e accessor retornam a mesma instância no processo. |
-| Facade | Rotas como clientes, `FacadeSingletonController`, `UserService` e `WorkoutService` | Operações atuais passam pela fachada; testes usam substitutos. |
+| Facade | Rotas como clientes, `FacadeSingletonController`, `UserService`, `WorkoutService` e `AccessReportService` | Operações atuais passam pela fachada; testes usam substitutos. |
 | Repository | `UserRepository`, `WorkoutRepository`, `AccessEventRepository` em `ports`; implementações em `repository.py` | Serviços dependem de protocolos; `tests/test_access_repositories.py` e contratos de treinos/usuários. |
 | Abstract Factory | `repository_factory`, `RepositoryFactory`, `MemoryRepositoryFactory`, `SQLiteRepositoryFactory`, `Repositories` | `create_app` seleciona família RAM ou SQLite; `tests/test_facade.py` cobre configuração. |
 | Unit of Work | `UnitOfWork`, `TransactionRepositories`, `MemoryUnitOfWork`, `SQLiteUnitOfWork` | Escrita coordenada treino + evento em um bloco; testes de commit e rollback em `test_access_repositories.py`. |
 | Adapter | `WorkoutService` (cliente), `AccessLogPort` (Target), `LoggingAccessLogAdapter` (Adapter), `logging.Logger` (Adaptee) | `test_access_recording.py`: log real após commit e substituto com falha; somente proprietário, operação e instante UTC. |
-| Template Method | *Planejado* — agregação + renderização HTML/PDF | ADR/contrato público no PR de Miguel (`tasks.md` 3.x). |
+| Template Method | `AccessReportTemplate.generate` (algoritmo), `render` (passo abstrato), `HtmlAccessReport` e `PdfAccessReport` (subclasses) | `test_access_reports.py`: fluxo único, equivalência HTML/PDF, filtros, período vazio, falhas e paginação. |
 
 `ApplicationContext` mantém serviços e o agregado `Repositories` de uma aplicação.
 A fachada não guarda contexto. `count_entities` soma usuários e treinos apenas;
@@ -62,5 +65,6 @@ o mesmo arquivo SQLite compartilha eventos confirmados.
 Os [ADRs 0003](adr/0003-validacao-persistencia.md)–[0004](adr/0004-revisao-entrega-1.md)
 registram entregas anteriores; o [0006](adr/0006-repository-factory.md) registra
 Factory e repositório de eventos. O [0007](adr/0007-adapter-log-eventos.md) registra
-o Adapter; o esboço [0008](adr/0008-relatorio-template-method.md) permanece com Miguel.
+o Adapter; o [0008](adr/0008-relatorio-template-method.md) registra Template Method,
+biblioteca PDF, composição e contratos públicos de relatório.
 Handoff: [docs/sprint4/README.md](sprint4/README.md). Command e Memento continuam fora do escopo.

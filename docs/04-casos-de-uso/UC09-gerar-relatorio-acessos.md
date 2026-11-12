@@ -5,7 +5,7 @@
 **Gatilho:** `GET /statistics/accesses?start=&end=&format=`.
 **Pré-condições de sucesso:** API iniciada; parâmetros válidos.
 **Requisitos:** RF21, RF22, RF23 (falha de geração).
-**Implementação prevista:** [Miguel — guia Sprint 4](../sprint4/miguel-relatorio.md).
+**Implementação:** [Miguel — relatório e Template Method](../sprint4/miguel-relatorio.md), [ADR 0008](../adr/0008-relatorio-template-method.md).
 
 > A API não autentica clientes. O relatório agrega eventos pelo **proprietário do treino**
 > registrado nas operações, não por identidade do chamador.

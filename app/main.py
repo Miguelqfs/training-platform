@@ -8,6 +8,8 @@ from app.accesses.logging_adapter import LoggingAccessLogAdapter
 from app.accesses.ports import AccessLogPort
 from app.error_handlers import register_error_handlers
 from app.facade import ApplicationContext
+from app.reports.renderers import HtmlAccessReport, PdfAccessReport
+from app.reports.service import AccessReportService
 from app.repositories import repository_factory
 from app.routers.statistics import router as statistics_router
 from app.routers.users import router as users_router
@@ -37,6 +39,12 @@ def create_app(
             if access_log is not None
             else LoggingAccessLogAdapter(),
             clock=clock,
+        ),
+        AccessReportService(
+            {
+                "html": HtmlAccessReport(repositories.accesses),
+                "pdf": PdfAccessReport(repositories.accesses),
+            }
         ),
         repositories=repositories,
     )
