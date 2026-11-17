@@ -37,13 +37,12 @@ Aluno ..> FutureApp
 Aluno ..> FutureIA
 IA ..> FutureIA
 note bottom of UC03
-  UC03, UC04, UC05, UC07: após implementação
-  Sprint 4, operação bem-sucedida gera
+  UC03, UC04, UC05, UC07: operação bem-sucedida gera
   evento para o dono do treino (RF19).
   UC06 e UC09 não geram eventos.
 end note
 note bottom of UC09
-  HTTP previsto: GET /statistics/accesses
+  HTTP: GET /statistics/accesses
   (formato html ou pdf). Ver UC09.
 end note
 @enduml

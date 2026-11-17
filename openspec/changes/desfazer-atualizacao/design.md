@@ -20,7 +20,7 @@ RAM usa a mesma trava e rollback coordenado da aplicação; o Memento é voláti
 
 Um desfazer bem-sucedido registra um único evento `undo`, contendo proprietário, operação e instante UTC. Tentativas recusadas não registram eventos. A operação aparece em HTML e PDF, inclusive com contagem zero; os totais e somas continuam coerentes. Eventos anteriores permanecem inalterados. O proprietário associado ao treino não autentica o cliente.
 
-A change `relatorio-de-acessos` ainda está aberta e contém RF19–RF23, incluindo cenário de quatro operações. A equipe deve concluir e arquivar essa change antes de incorporar o delta correspondente à sprint 5; então atualizar integralmente os requisitos afetados e os cenários de período vazio para cinco operações. Enquanto isso, RF24–RF27 desta change descrevem a extensão proposta sem editar a change anterior nem fingir que ela já foi arquivada.
+A change `relatorio-de-acessos` foi arquivada na mesma branch, e RF19–RF23 estão nas specs em vigor. O delta desta change propõe substituir integralmente RF19, RF21 e RF23, preservando os cenários anteriores e estendendo-os para desfazer; RF24–RF27 descrevem a nova capacidade. Até a implementação e arquivamento desta change, os relatórios existentes continuam com quatro operações.
 
 ## Command e Memento
 

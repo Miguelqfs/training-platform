@@ -1,11 +1,11 @@
 # Arquitetura do projeto
 
-## Estado atual — Sprint 4 (integração)
+## Estado atual — Sprint 4
 
 API local Python 3.12/FastAPI/Pydantic. Usuários, treinos, captura e persistência de
 eventos de acesso, Adapter de log e relatório HTTP em HTML/PDF estão implementados.
 A change OpenSpec
-[relatorio-de-acessos](../openspec/changes/relatorio-de-acessos/proposal.md)
+[relatorio-de-acessos](../openspec/changes/archive/2026-11-17-relatorio-de-acessos/proposal.md)
 define o contrato completo; aplicativo mobile, PostgreSQL e treinador IA seguem
 futuros. [ADR 0005](adr/0005-treinos-fachada.md) e [0006](adr/0006-repository-factory.md)
 complementam as decisões de fachada e fábrica.
@@ -53,7 +53,7 @@ flowchart TD
 
 Serviços consomem protocolos em `ports`; a composição escolhe implementações.
 `WorkoutService` grava eventos usando `unit_of_work.transaction()`
-conforme [design da change](../openspec/changes/relatorio-de-acessos/design.md).
+conforme [design da change](../openspec/changes/archive/2026-11-17-relatorio-de-acessos/design.md).
 A fachada permanece sem estado de negócio. O Adapter registra somente proprietário,
 operação e instante UTC após o commit; falha auxiliar não altera o sucesso
 ([ADR 0007](adr/0007-adapter-log-eventos.md)). `GET /statistics/accesses` delega ao

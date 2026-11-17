@@ -2,7 +2,7 @@
 
 ## Contexto e limites
 
-Esta é uma proposta para revisão, não uma descrição de implementação. A API não autentica nem autoriza; `user_id` é o dono associado ao treino, nunca uma alegação sobre o cliente. UC03 (criar), UC05 (consultar), UC04 (atualizar) e UC07 (excluir) originam eventos; UC06 e demais operações não. UC09 será o caso de uso proposto para gerar relatório.
+Este documento preserva o design proposto; os ADRs 0006–0008 descrevem a implementação integrada. A API não autentica nem autoriza; `user_id` é o dono associado ao treino, nunca uma alegação sobre o cliente. UC03 (criar), UC05 (consultar), UC04 (atualizar) e UC07 (excluir) originam eventos; UC06 e demais operações não. UC09 será o caso de uso proposto para gerar relatório.
 
 ## Eventos e consistência
 

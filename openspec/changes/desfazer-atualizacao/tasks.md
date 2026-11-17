@@ -5,7 +5,7 @@ As tarefas seguintes são de implementação e integração, não representam tr
 ## Especificação e pré-requisito
 
 - [ ] 1.1 Revisar proposta, cenários e contratos de desfazer com a equipe.
-- [ ] 1.2 Concluir documentação e arquivar `relatorio-de-acessos`; atualizar o delta desta change para os requisitos incorporados, preservando IDs e cenários anteriores.
+- [x] 1.2 Concluir documentação e arquivar `relatorio-de-acessos`; atualizar o delta desta change para os requisitos incorporados, preservando IDs e cenários anteriores.
 
 ## Persistência e Memento
 

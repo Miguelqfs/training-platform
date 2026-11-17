@@ -25,7 +25,7 @@ Na API atual, a atualização substitui o nome e a descrição do treino, sem of
 
 ### Modified Capabilities
 
-- As capacidades `treinos`, `fachada` e `relatorio-de-acessos` precisarão refletir os contratos descritos no design. A change da sprint 4 ainda está aberta: ela deve ser concluída e arquivada antes de aplicar eventuais deltas `MODIFIED` sobre os seus requisitos. Os IDs existentes não serão renumerados.
+- `relatorio-de-acessos`: propõe modificar RF19, RF21 e RF23 para incluir desfazer como quinta operação. Os demais contratos de treinos e fachada são estendidos pelos novos requisitos, preservando seus IDs.
 
 ## Origem das decisões
 

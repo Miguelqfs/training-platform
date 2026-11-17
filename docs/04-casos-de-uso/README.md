@@ -28,5 +28,5 @@ O bloco futuro deriva da [visão](../01-visao.md), sem afirmar implementação.
 UC09 integra o escopo da Sprint 4. Os contratos normativos ficam em
 [usuários](../../openspec/specs/usuarios/spec.md),
 [treinos](../../openspec/specs/treinos/spec.md),
-[fachada](../../openspec/specs/fachada/spec.md) e no delta
-[relatorio-de-acessos](../../openspec/changes/relatorio-de-acessos/specs/relatorio-de-acessos/spec.md).
+[fachada](../../openspec/specs/fachada/spec.md) e em
+[relatorio-de-acessos](../../openspec/specs/relatorio-de-acessos/spec.md).
