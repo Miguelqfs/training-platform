@@ -27,10 +27,7 @@
 ![Diagrama de classes da Sprint 4](diagramas/diagrama-de-classes.png)
 
 [Fonte PlantUML](diagramas/classes-analise-usuarios.puml). O nome histórico do
-arquivo foi preservado. Participantes em cinza (`#TECHNOLOGY`) são contratos
-previstos no handoff da change [relatorio-de-acessos](../openspec/changes/relatorio-de-acessos/proposal.md).
-A atualização gráfica final fica com Rafael após a integração; Adapter e Template
-Method já estão implementados conforme a tabela abaixo e os
+arquivo foi preservado. Adapter e Template Method estão implementados conforme a tabela abaixo e os
 [ADRs 0007](adr/0007-adapter-log-eventos.md) e [0008](adr/0008-relatorio-template-method.md).
 Os contratos de treinos e fachada da Sprint 3
 permanecem nos [ADRs 0005](adr/0005-treinos-fachada.md) e [0006](adr/0006-repository-factory.md).
@@ -40,8 +37,8 @@ permanecem nos [ADRs 0005](adr/0005-treinos-fachada.md) e [0006](adr/0006-reposi
 ![Exceções de usuários e treinos](diagramas/excecoes-validacao.png)
 
 [Fonte PlantUML](diagramas/excecoes-validacao.puml). Esta visão complementar
-permanece da Sprint 3 até revisão conjunta com os novos fluxos de relatório (503
-na geração, 422 no período). `WorkoutService` sinaliza a primeira regra inválida;
+representa as exceções de validação de usuários e treinos. O relatório responde 503
+na geração e 422 no período inválido. `WorkoutService` sinaliza a primeira regra inválida;
 erros de ausência são 404, indisponibilidade é 503 e duplicidade de usuário
 continua 409.
 

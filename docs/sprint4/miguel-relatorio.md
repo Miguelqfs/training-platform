@@ -1,6 +1,6 @@
 # Miguel — relatório (Template Method) e API
 
-Referências: [design](../../openspec/changes/relatorio-de-acessos/design.md) (contrato HTTP e agregação), [spec delta](../../openspec/changes/relatorio-de-acessos/specs/relatorio-de-acessos/spec.md), [UC09](../04-casos-de-uso/UC09-gerar-relatorio-acessos.md), [ADR 0008](../adr/0008-relatorio-template-method.md).
+Referências: [design](../../openspec/changes/archive/2026-11-17-relatorio-de-acessos/design.md) (contrato HTTP e agregação), [spec delta](../../openspec/changes/archive/2026-11-17-relatorio-de-acessos/specs/relatorio-de-acessos/spec.md), [UC09](../04-casos-de-uso/UC09-gerar-relatorio-acessos.md), [ADR 0008](../adr/0008-relatorio-template-method.md).
 
 Implementado neste PR sobre `develop`, após a integração do registro de Luigi (#21).
 O arquivamento da change e a release permanecem no fechamento do Rafael.

@@ -5,7 +5,7 @@ skinparam packageStyle rectangle
 skinparam defaultFontSize 12
 hide empty members
 
-title Sprint 4 — classes de projeto (integração em andamento)
+title Sprint 4 — classes de projeto implementadas
 
 package "Fronteira e composição" {
   class "routers/users, workouts, statistics" as Routes <<boundary>>
@@ -15,6 +15,7 @@ package "Fronteira e composição" {
   class ApplicationContext <<frozen>> {
     +users: UserService
     +workouts: WorkoutService
+    +reports: AccessReportService
     +repositories: Repositories
   }
   class FacadeSingletonController <<Singleton, Facade>> {
@@ -23,20 +24,20 @@ package "Fronteira e composição" {
     +{static} get_instance(): FacadeSingletonController
     +count_entities(context): int
     ..
-    operações de usuários e treinos
+    operações de usuários, treinos e relatórios
   }
 }
 
 package "Negócio — serviços" {
   class UserService <<control>>
-  class WorkoutService <<control>> {
-    ..
-    PR Luigi: UoW + eventos
+  class WorkoutService <<control>>
+  class AccessReportService <<control>>
+  abstract class AccessReportTemplate <<Template Method>> {
+    +generate(start, end)
+    #render(report)
   }
-  class "Relatório (planejado)" as ReportSvc <<control>> #TECHNOLOGY {
-    Template Method + agregação
-    PR Miguel
-  }
+  class HtmlAccessReport
+  class PdfAccessReport
 }
 
 package "Negócio — domínio" {
@@ -53,9 +54,7 @@ package "Negócio — domínio" {
 
 package "Negócio — portas" {
   interface UserRepository <<Protocol>>
-  interface WorkoutRepository <<Protocol>> {
-    +transaction()
-  }
+  interface WorkoutRepository <<Protocol>>
   interface AccessEventRepository <<Protocol>> {
     +add(event)
     +list_between(start, end)
@@ -63,7 +62,7 @@ package "Negócio — portas" {
   interface UnitOfWork <<Protocol>> {
     +transaction(): TransactionRepositories
   }
-  interface "AccessLogPort (planejado)" as LogPort #TECHNOLOGY
+  interface AccessLogPort <<Protocol>>
   class TransactionRepositories <<frozen>>
 }
 
@@ -85,7 +84,8 @@ package "Infraestrutura — persistência" {
   class SQLiteWorkoutRepository
   class MemoryAccessEventRepository
   class SQLiteAccessEventRepository
-  class "LogAdapter (planejado)" as LogAdapter #TECHNOLOGY
+  class LoggingAccessLogAdapter <<Adapter>>
+  class "logging.Logger" as Logger
   class "storage.sqlite_connection" as Connection <<module>>
 }
 
@@ -97,14 +97,18 @@ Routes ..> ApplicationContext : request.app.state.context
 FacadeSingletonController ..> ApplicationContext : recebe, não guarda
 ApplicationContext --> UserService
 ApplicationContext --> WorkoutService
+ApplicationContext --> AccessReportService
 ApplicationContext --> Repositories
 FacadeSingletonController ..> UserService
 FacadeSingletonController ..> WorkoutService
+FacadeSingletonController ..> AccessReportService
 UserService --> UserRepository
 WorkoutService --> WorkoutRepository
-WorkoutService ..> UnitOfWork : mutações + evento (Luigi)
-ReportSvc ..> AccessEventRepository : Miguel
-ReportSvc ..> FacadeSingletonController : rota /statistics/accesses
+WorkoutService ..> UnitOfWork : treino + evento
+AccessReportService --> AccessReportTemplate
+AccessReportTemplate --> AccessEventRepository
+HtmlAccessReport --|> AccessReportTemplate
+PdfAccessReport --|> AccessReportTemplate
 MemoryRepositoryFactory ..|> RepositoryFactory
 SQLiteRepositoryFactory ..|> RepositoryFactory
 MemoryUserRepository ..|> UserRepository
@@ -122,16 +126,13 @@ SQLiteUnitOfWork ..|> UnitOfWork
 SQLiteUserRepository ..> Connection
 SQLiteWorkoutRepository ..> Connection
 SQLiteAccessEventRepository ..> Connection
-LogAdapter ..|> LogPort
-WorkoutService ..> LogPort : opcional, Luigi
+LoggingAccessLogAdapter ..|> AccessLogPort
+LoggingAccessLogAdapter --> Logger
+WorkoutService ..> AccessLogPort : após commit
 User "1" -- "0..*" Workout : user_id
 AccessEvent ..> User : proprietário (id)
 note bottom of RepositoryFactory
   Abstract Factory: família RAM ou SQLite
   coerente + mesma UoW. ADR 0006.
-end note
-note bottom of ReportSvc
-  Classes ainda não no repositório;
-  contrato em openspec/changes/relatorio-de-acessos.
 end note
 @enduml

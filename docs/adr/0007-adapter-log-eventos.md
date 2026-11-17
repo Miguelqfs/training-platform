@@ -6,7 +6,7 @@ Aceito na implementação de registro de acessos; sujeito à revisão do PR.
 
 ## Contexto
 
-A change [relatorio-de-acessos](../../openspec/changes/relatorio-de-acessos/design.md)
+A change [relatorio-de-acessos](../../openspec/changes/archive/2026-11-17-relatorio-de-acessos/design.md)
 exige um evento por criação, consulta individual, atualização e exclusão de treino
 bem-sucedida. Os repositórios e a unidade de trabalho do
 [ADR 0006](0006-repository-factory.md) fornecem persistência RAM/SQLite e atomicidade.

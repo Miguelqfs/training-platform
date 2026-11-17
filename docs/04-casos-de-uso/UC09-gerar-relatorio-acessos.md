@@ -29,4 +29,4 @@
 
 **Garantia:** consulta de relatório não altera treinos nem eventos existentes.
 
-[Delta normativo](../../openspec/changes/relatorio-de-acessos/specs/relatorio-de-acessos/spec.md) · [Índice](README.md)
+[Requisitos em vigor](../../openspec/specs/relatorio-de-acessos/spec.md) · [Índice](README.md)

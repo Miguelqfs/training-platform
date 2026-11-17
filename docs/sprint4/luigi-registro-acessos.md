@@ -1,6 +1,6 @@
 # Luigi — registro de acessos e Adapter
 
-Referências: [design](../../openspec/changes/relatorio-de-acessos/design.md), [spec delta](../../openspec/changes/relatorio-de-acessos/specs/relatorio-de-acessos/spec.md), [ADR 0006](../adr/0006-repository-factory.md), [ADR 0007](../adr/0007-adapter-log-eventos.md).
+Referências: [design](../../openspec/changes/archive/2026-11-17-relatorio-de-acessos/design.md), [spec delta](../../openspec/changes/archive/2026-11-17-relatorio-de-acessos/specs/relatorio-de-acessos/spec.md), [ADR 0006](../adr/0006-repository-factory.md), [ADR 0007](../adr/0007-adapter-log-eventos.md).
 
 Registro e Adapter implementados neste PR. A geração HTML/PDF, Template Method
 e API de relatório continuam com Miguel; a change permanece aberta.
