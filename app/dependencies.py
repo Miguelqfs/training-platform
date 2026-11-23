@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import Depends, Request
 
-from app.facade import ApplicationContext
+from app.context import ApplicationContext
 
 
 def get_context(request: Request) -> ApplicationContext:

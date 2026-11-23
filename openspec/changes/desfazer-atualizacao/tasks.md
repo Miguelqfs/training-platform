@@ -15,7 +15,7 @@ As tarefas seguintes são de implementação e integração, não representam tr
 
 ## Command e desfazer
 
-- [ ] 3.1 Registrar ADR da fachada baseada em Command com participantes e decisões de compatibilidade.
+- [x] 3.1 Registrar ADR da fachada baseada em Command com participantes e decisões de compatibilidade.
 - [ ] 3.2 Encaminhar operações existentes e desfazer por comandos e testar fachada, contextos e contratos anteriores.
 - [ ] 3.3 Implementar restauração e endpoint com testes de sucesso, ausência, repetição, falhas e treinos independentes.
 - [ ] 3.4 Registrar evento `undo` atomicamente, atualizar relatórios HTML/PDF e testar dados existentes, operação zero e falha de log.
