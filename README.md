@@ -125,9 +125,9 @@ não guarda dados. Cada aplicação tem seu contexto; RAM e arquivos diferentes
 são independentes, enquanto o mesmo SQLite compartilha registros confirmados.
 Decisões: [ADR 0005](docs/adr/0005-treinos-fachada.md).
 
-## Sprint 4 (integração em andamento)
+## Sprint 4
 
-A change [relatorio-de-acessos](openspec/changes/relatorio-de-acessos/proposal.md) acrescenta
+A change arquivada [relatorio-de-acessos](openspec/changes/archive/2026-11-17-relatorio-de-acessos/proposal.md) acrescenta
 eventos nas operações bem-sucedidas de treino (criar, consultar individual, atualizar,
 excluir) e relatório por período. Persistência de eventos, Factory e Unit of Work já
 estão implementados ([ADR 0006](docs/adr/0006-repository-factory.md)). O serviço de

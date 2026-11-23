@@ -22,7 +22,13 @@ Esta lista planeja a sprint; itens permanecem abertos até serem concluídos e v
 
 ## Documentação e encerramento
 
-- [ ] 4.1 Atualizar UC03–UC05 e UC07, adicionar UC09 e atualizar diagramas, arquitetura, README e tabela dos padrões usados.
-- [ ] 4.2 Executar testes, Ruff, validação OpenSpec, links e verificações do CI; conferir cobertura e ausência de credenciais.
-- [ ] 4.3 Integrar os PRs de implementação após revisão e checks; arquivar a change somente quando todos os requisitos estiverem implementados e validados.
-- [ ] 4.4 Preparar PR `develop` → `main` e tag `v0.3.0` após a validação integrada.
+- [x] 4.1 Atualizar UC03–UC05 e UC07, adicionar UC09 e atualizar diagramas, arquitetura, README e tabela dos padrões usados.
+- [x] 4.2 Executar testes, Ruff, validação OpenSpec, links e verificações do CI; conferir cobertura e ausência de credenciais.
+- [x] 4.3 Integrar os PRs de implementação após revisão e checks; arquivar a change somente quando todos os requisitos estiverem implementados e validados.
+- [x] 4.4 Preparar PR `develop` → `main` e tag `v0.3.0` após a validação integrada (PR #23).
+
+Evidências: PR #23 registra CI aprovado, 368 testes e cobertura de linhas de
+99,58% na release. No fechamento documental em 17/11/2026, 368 testes, Ruff,
+formatação, OpenSpec e verificação de links foram executados novamente. A
+cobertura não foi medida novamente; a ausência de credenciais é coberta pelos
+testes existentes. O CI da alteração de fechamento é acompanhado no PR #24.
