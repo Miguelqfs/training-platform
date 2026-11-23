@@ -6,8 +6,8 @@ from fastapi import FastAPI
 
 from app.accesses.logging_adapter import LoggingAccessLogAdapter
 from app.accesses.ports import AccessLogPort
+from app.context import ApplicationContext
 from app.error_handlers import register_error_handlers
-from app.facade import ApplicationContext
 from app.reports.renderers import HtmlAccessReport, PdfAccessReport
 from app.reports.service import AccessReportService
 from app.repositories import repository_factory
