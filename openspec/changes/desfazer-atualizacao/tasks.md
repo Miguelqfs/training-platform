@@ -9,9 +9,9 @@ As tarefas seguintes são de implementação e integração, não representam tr
 
 ## Persistência e Memento
 
-- [ ] 2.1 Registrar ADR dos contratos de persistência e restauração junto ao primeiro PR que os alterar.
-- [ ] 2.2 Implementar Memento e armazenamento em RAM/SQLite, com criação compatível com bancos antigos e testes de reinício e isolamento.
-- [ ] 2.3 Integrar captura, substituição, consumo e remoção de Memento à unidade de trabalho, com testes de rollback e concorrência.
+- [x] 2.1 Registrar ADR dos contratos de persistência e restauração junto ao primeiro PR que os alterar.
+- [x] 2.2 Implementar Memento e armazenamento em RAM/SQLite, com criação compatível com bancos antigos e testes de reinício e isolamento.
+- [x] 2.3 Integrar captura, substituição, consumo e remoção de Memento à unidade de trabalho, com testes de rollback e concorrência.
 
 ## Command e desfazer
 
