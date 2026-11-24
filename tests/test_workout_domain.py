@@ -20,7 +20,10 @@ from app.workouts.domain import (
     WorkoutRegistration,
     WorkoutUpdate,
 )
-from app.workouts.repository import SQLiteWorkoutRepository
+from app.workouts.repository import (
+    MemoryWorkoutMementoRepository,
+    SQLiteWorkoutRepository,
+)
 from app.workouts.service import WorkoutService
 
 
@@ -216,11 +219,12 @@ def test_service_accepts_independent_contracts_without_inheritance():
 
     workouts = Workouts()
     accesses = MemoryAccessEventRepository()
+    mementos = MemoryWorkoutMementoRepository()
 
     class Transactions:
         @contextmanager
         def transaction(self):
-            yield TransactionRepositories(workouts, accesses)
+            yield TransactionRepositories(workouts, accesses, mementos)
 
     service = WorkoutService(workouts, Users(), Transactions(), access_log=Mock())
     workout = service.create_workout(WorkoutRegistration(7, " Plano "))
