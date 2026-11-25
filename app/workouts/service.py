@@ -135,7 +135,7 @@ class WorkoutService:
             tx.mementos.save(workout_id, current.create_memento())
             workout = tx.workouts.update(workout_id, fields)
             if workout is None:
-                raise WorkoutNotFoundError()
+                raise PersistenceError("A atualização do treino não foi gravada")
             event = self._record(tx, workout, "update")
         self._log(event)
         return workout
@@ -154,7 +154,7 @@ class WorkoutService:
                 workout_id, WorkoutUpdate(restored.name, restored.description)
             )
             if workout is None:
-                raise WorkoutNotFoundError()
+                raise PersistenceError("A restauração do treino não foi gravada")
             event = self._record(tx, workout, "undo")
         self._log(event)
         return workout

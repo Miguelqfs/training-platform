@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 
 from app.accesses.domain import AccessEvent
 from app.main import create_app
-from app.users.domain import NewUser, UserRole
+from app.users.domain import NewUser, PersistenceError, UserRole
 from app.users.repository import SQLiteUserRepository
 from app.workouts.domain import WorkoutRegistration
 from app.workouts.repository import SQLiteWorkoutRepository
@@ -120,6 +120,41 @@ def test_openapi_documents_undo_contract(client):
     undo = paths["/workouts/{workout_id}/undo"]["post"]
     assert "requestBody" not in undo
     assert set(undo["responses"]) == {"200", "404", "409", "422", "503"}
+
+
+@pytest.mark.parametrize("storage", ["sqlite"], indirect=True)
+def test_sqlite_ignored_workout_write_preserves_workout_history_and_events(
+    client, tmp_path
+):
+    repos = client.app.state.context.repositories
+    workout = repos.workouts.add(WorkoutRegistration(1, "Peito", "Supino"))
+    url = f"/workouts/{workout.id}"
+    assert client.put(url, json={"name": "Costas"}).status_code == 200
+    current = repos.workouts.get_by_id(workout.id)
+    expected_events = [AccessEvent(workout.user_id, "update", NOW)]
+    with closing(sqlite3.connect(tmp_path / "undo.db")) as db:
+        db.execute(
+            "CREATE TRIGGER ignore_workout_update BEFORE UPDATE ON workouts "
+            "BEGIN SELECT RAISE(IGNORE); END"
+        )
+
+        for method, endpoint, payload in (
+            ("PUT", url, {"name": "Pernas"}),
+            ("POST", f"{url}/undo", None),
+        ):
+            response = client.request(method, endpoint, json=payload)
+            assert response.status_code == 503
+            assert response.json() == {"detail": PersistenceError.WORKOUT_MESSAGE}
+            assert repos.workouts.get_by_id(workout.id) == current
+            assert repos.mementos.get(workout.id) == workout.create_memento()
+            assert (
+                repos.accesses.list_between(NOW, NOW + timedelta(seconds=1))
+                == expected_events
+            )
+
+        db.execute("DROP TRIGGER ignore_workout_update")
+
+    assert client.post(f"{url}/undo").json() == asdict(workout)
 
 
 def test_sqlite_migrates_legacy_events_and_can_undo_after_restart(tmp_path):
