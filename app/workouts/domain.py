@@ -76,3 +76,8 @@ class UserNotFoundError(Exception):
 class WorkoutNotFoundError(Exception):
     def __init__(self) -> None:
         super().__init__("Treino não encontrado")
+
+
+class WorkoutUndoUnavailableError(Exception):
+    def __init__(self) -> None:
+        super().__init__("Nenhuma atualização disponível para desfazer")

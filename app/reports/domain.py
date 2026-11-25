@@ -3,10 +3,9 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Literal
 
-from app.accesses.domain import AccessEvent, Operation
+from app.accesses.domain import OPERATIONS, AccessEvent, Operation
 
 ReportFormat = Literal["html", "pdf"]
-OPERATION_ORDER: tuple[Operation, ...] = ("create", "get", "update", "delete")
 
 
 class InvalidReportError(ValueError):
@@ -49,5 +48,5 @@ def aggregate(
         end,
         len(events),
         tuple(sorted(users.items())),
-        tuple((operation, operations[operation]) for operation in OPERATION_ORDER),
+        tuple((operation, operations[operation]) for operation in OPERATIONS),
     )

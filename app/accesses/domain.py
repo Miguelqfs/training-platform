@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Literal
+from typing import Literal, get_args
 
-Operation = Literal["create", "get", "update", "delete"]
+Operation = Literal["create", "get", "update", "delete", "undo"]
+OPERATIONS: tuple[Operation, ...] = get_args(Operation)
 
 
 def utc(value: datetime) -> datetime:
@@ -27,6 +28,6 @@ class AccessEvent:
     def __post_init__(self) -> None:
         if type(self.user_id) is not int or self.user_id < 1:
             raise ValueError("Identificador de usuário inválido")
-        if self.operation not in ("create", "get", "update", "delete"):
+        if self.operation not in OPERATIONS:
             raise ValueError("Operação inválida")
         object.__setattr__(self, "occurred_at", utc(self.occurred_at))

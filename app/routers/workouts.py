@@ -75,6 +75,22 @@ def update_workout(
     return WorkoutResponse.model_validate(workout)
 
 
+@router.post(
+    "/{workout_id}/undo",
+    response_model=WorkoutResponse,
+    responses={
+        **WORKOUT_INPUT_ERRORS,
+        HTTPStatus.CONFLICT: {
+            "model": ErrorMessage,
+            "description": "Nenhuma atualização disponível para desfazer",
+        },
+    },
+)
+def undo_workout(workout_id: WorkoutId, context: Context) -> WorkoutResponse:
+    workout = FacadeSingletonController.get_instance().undo_workout(context, workout_id)
+    return WorkoutResponse.model_validate(workout)
+
+
 @router.delete(
     "/{workout_id}",
     status_code=status.HTTP_204_NO_CONTENT,

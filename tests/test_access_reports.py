@@ -71,7 +71,7 @@ def facts(response):
         "operations": tuple(
             (operation, int(count))
             for operation, count in re.findall(
-                r"\b(create|get|update|delete) (\d+)\b", operations
+                r"\b(create|get|update|delete|undo) (\d+)\b", operations
             )
         ),
     }
@@ -121,7 +121,13 @@ def test_formats_have_equivalent_filtered_sorted_counts_without_new_events(popul
         "end": END.isoformat(),
         "total": 4,
         "users": ((1, 2), (2, 2)),
-        "operations": (("create", 1), ("get", 2), ("update", 1), ("delete", 0)),
+        "operations": (
+            ("create", 1),
+            ("get", 2),
+            ("update", 1),
+            ("delete", 0),
+            ("undo", 0),
+        ),
     }
     assert facts(responses[0]) == facts(responses[1]) == expected
     assert (
@@ -165,6 +171,7 @@ def test_empty_period_has_zero_counts_and_no_users(populated, format):
         ("get", 0),
         ("update", 0),
         ("delete", 0),
+        ("undo", 0),
     )
     assert "Nenhum acesso no período." in report_text(response)
 
@@ -292,6 +299,7 @@ def test_template_validates_reads_once_aggregates_then_renders():
         ("get", 2),
         ("update", 1),
         ("delete", 0),
+        ("undo", 0),
     )
 
 
@@ -369,6 +377,7 @@ def test_real_workout_events_feed_both_reports_without_sensitive_fields(client):
     assert client.post("/workouts/", json=body).status_code == 201
     assert client.get("/workouts/1").status_code == 200
     assert client.put("/workouts/1", json={"name": "Novo"}).status_code == 200
+    assert client.post("/workouts/1/undo").status_code == 200
     assert client.delete("/workouts/1").status_code == 204
     for format in ("html", "pdf"):
         response = client.get(
@@ -376,12 +385,14 @@ def test_real_workout_events_feed_both_reports_without_sensitive_fields(client):
         )
         assert response.status_code == 200
         result = facts(response)
-        assert result["users"] == ((2, 4),)
+        assert result["total"] == 5
+        assert result["users"] == ((2, 5),)
         assert result["operations"] == (
             ("create", 1),
             ("get", 1),
             ("update", 1),
             ("delete", 1),
+            ("undo", 1),
         )
         assert all(
             secret not in report_text(response)

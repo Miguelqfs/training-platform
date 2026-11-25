@@ -14,6 +14,7 @@ from app.commands import (
     ListUsersCommand,
     ListWorkoutsCommand,
     RegisterUserCommand,
+    UndoWorkoutCommand,
     UpdateWorkoutCommand,
 )
 from app.context import ApplicationContext
@@ -79,6 +80,14 @@ OPERATIONS = [
         UpdateWorkoutCommand(42, UPDATE),
         "workouts",
         "update_workout",
+        WORKOUT,
+    ),
+    (
+        "undo_workout",
+        (42,),
+        UndoWorkoutCommand(42),
+        "workouts",
+        "undo_workout",
         WORKOUT,
     ),
     (
