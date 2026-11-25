@@ -7,10 +7,42 @@ from datetime import datetime
 from pathlib import Path
 from threading import RLock
 
-from app.accesses.domain import AccessEvent, interval
+from app.accesses.domain import OPERATIONS, AccessEvent, interval
 from app.accesses.ports import AccessEventRepository as AccessEventRepository
 from app.storage import sqlite_connection
 from app.users.domain import PersistenceError
+
+_OPERATION_CHECK = f"CHECK (operation IN ({', '.join(map(repr, OPERATIONS))}))"
+
+
+def _create_access_events_table(db: sqlite3.Connection, table: str) -> None:
+    db.execute(f"""CREATE TABLE {table} (
+        id INTEGER PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id),
+        operation TEXT NOT NULL {_OPERATION_CHECK},
+        occurred_at TEXT NOT NULL
+    )""")
+
+
+def _initialize_access_events(db: sqlite3.Connection) -> None:
+    # Start before inspecting the schema so opening the same database serializes migration.
+    db.execute("BEGIN IMMEDIATE")
+    existing = db.execute(
+        "SELECT sql FROM sqlite_schema WHERE type = 'table' AND name = 'access_events'"
+    ).fetchone()
+    if existing is None:
+        _create_access_events_table(db, "access_events")
+    elif _OPERATION_CHECK not in existing[0]:
+        _create_access_events_table(db, "access_events_new")
+        db.execute(
+            """INSERT INTO access_events_new (id, user_id, operation, occurred_at)
+               SELECT id, user_id, operation, occurred_at FROM access_events"""
+        )
+        db.execute("DROP TABLE access_events")
+        db.execute("ALTER TABLE access_events_new RENAME TO access_events")
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS access_events_occurred_at ON access_events(occurred_at)"
+    )
 
 
 class MemoryAccessEventRepository:
@@ -49,15 +81,7 @@ class SQLiteAccessEventRepository:
         if connection is None:
             try:
                 with sqlite_connection(path) as db:
-                    db.execute("""CREATE TABLE IF NOT EXISTS access_events (
-                        id INTEGER PRIMARY KEY,
-                        user_id INTEGER NOT NULL REFERENCES users(id),
-                        operation TEXT NOT NULL CHECK (operation IN ('create', 'get', 'update', 'delete')),
-                        occurred_at TEXT NOT NULL
-                    )""")
-                    db.execute(
-                        "CREATE INDEX IF NOT EXISTS access_events_occurred_at ON access_events(occurred_at)"
-                    )
+                    _initialize_access_events(db)
             except sqlite3.Error as error:
                 raise PersistenceError(
                     "Não foi possível inicializar eventos"

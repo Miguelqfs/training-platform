@@ -13,6 +13,7 @@ from app.workouts.domain import (
     Workout,
     WorkoutNotFoundError,
     WorkoutRegistration,
+    WorkoutUndoUnavailableError,
     WorkoutUpdate,
 )
 from app.workouts.policy import (
@@ -128,10 +129,33 @@ class WorkoutService:
         validate_id(workout_id, "treino")
         fields = normalize_fields(update)
         with self._transaction() as tx:
+            current = tx.workouts.get_by_id(workout_id)
+            if current is None:
+                raise WorkoutNotFoundError()
+            tx.mementos.save(workout_id, current.create_memento())
             workout = tx.workouts.update(workout_id, fields)
             if workout is None:
-                raise WorkoutNotFoundError()
+                raise PersistenceError("A atualização do treino não foi gravada")
             event = self._record(tx, workout, "update")
+        self._log(event)
+        return workout
+
+    def undo_workout(self, workout_id: int) -> Workout:
+        validate_id(workout_id, "treino")
+        with self._transaction() as tx:
+            current = tx.workouts.get_by_id(workout_id)
+            if current is None:
+                raise WorkoutNotFoundError()
+            memento = tx.mementos.consume(workout_id)
+            if memento is None:
+                raise WorkoutUndoUnavailableError()
+            restored = current.restore(memento)
+            workout = tx.workouts.update(
+                workout_id, WorkoutUpdate(restored.name, restored.description)
+            )
+            if workout is None:
+                raise PersistenceError("A restauração do treino não foi gravada")
+            event = self._record(tx, workout, "undo")
         self._log(event)
         return workout
 
@@ -141,6 +165,7 @@ class WorkoutService:
             workout = tx.workouts.get_by_id(workout_id)
             if workout is None or not tx.workouts.delete(workout_id):
                 raise WorkoutNotFoundError()
+            tx.mementos.delete(workout_id)
             event = self._record(tx, workout, "delete")
         self._log(event)
 

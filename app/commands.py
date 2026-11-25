@@ -66,6 +66,14 @@ class UpdateWorkoutCommand:
 
 
 @dataclass(frozen=True)
+class UndoWorkoutCommand:
+    workout_id: int
+
+    def execute(self, context: ApplicationContext) -> Workout:
+        return context.workouts.undo_workout(self.workout_id)
+
+
+@dataclass(frozen=True)
 class DeleteWorkoutCommand:
     workout_id: int
 

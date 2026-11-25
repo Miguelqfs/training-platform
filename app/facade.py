@@ -11,6 +11,7 @@ from app.commands import (
     ListUsersCommand,
     ListWorkoutsCommand,
     RegisterUserCommand,
+    UndoWorkoutCommand,
     UpdateWorkoutCommand,
 )
 from app.context import ApplicationContext
@@ -67,6 +68,9 @@ class FacadeSingletonController:
 
     def delete_workout(self, context: ApplicationContext, workout_id: int) -> None:
         self.execute(context, DeleteWorkoutCommand(workout_id))
+
+    def undo_workout(self, context: ApplicationContext, workout_id: int) -> Workout:
+        return self.execute(context, UndoWorkoutCommand(workout_id))
 
     def count_entities(self, context: ApplicationContext) -> int:
         return self.execute(context, CountEntitiesCommand())
