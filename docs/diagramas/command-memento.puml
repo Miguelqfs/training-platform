@@ -1,0 +1,85 @@
+@startuml
+!pragma layout smetana
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam defaultFontSize 14
+hide empty members
+
+title Sprint 5 — Command e Memento
+
+package "Fachada" {
+  class FacadeSingletonController <<Singleton, Facade, Invoker>> {
+    +execute(context, command): Result
+    +undo_workout(context, workout_id): Workout
+  }
+  interface Command <<Protocol>> {
+    +execute(context): Result
+  }
+  class UpdateWorkoutCommand <<ConcreteCommand>> {
+    +workout_id: int
+    +update: WorkoutUpdate
+    +execute(context): Workout
+  }
+  class UndoWorkoutCommand <<ConcreteCommand>> {
+    +workout_id: int
+    +execute(context): Workout
+  }
+}
+
+package "Negócio" {
+  class WorkoutService <<control>>
+  class Workout <<Originator>> {
+    +id: int
+    +user_id: int
+    +create_memento(): WorkoutMemento
+    +restore(memento): Workout
+  }
+  class WorkoutMemento <<Memento>> {
+    +name: str
+    +description: str
+    +to_update(): WorkoutUpdate
+  }
+  interface UnitOfWork <<Protocol>> {
+    +transaction(): TransactionRepositories
+  }
+  class TransactionRepositories <<frozen>> {
+    +workouts
+    +accesses
+    +mementos
+  }
+  interface WorkoutMementoRepository <<Protocol, Caretaker>> {
+    +save(workout_id, memento)
+    +get(workout_id)
+    +consume(workout_id)
+    +delete(workout_id)
+  }
+}
+
+package "Infraestrutura" {
+  class MemoryWorkoutMementoRepository
+  class SQLiteWorkoutMementoRepository
+}
+
+FacadeSingletonController --> Command : cria e executa
+UpdateWorkoutCommand ..|> Command
+UndoWorkoutCommand ..|> Command
+UpdateWorkoutCommand --> WorkoutService : update_workout
+UndoWorkoutCommand --> WorkoutService : undo_workout
+WorkoutService --> Workout
+WorkoutService --> UnitOfWork
+Workout --> WorkoutMemento : create_memento / restore
+UnitOfWork --> TransactionRepositories
+TransactionRepositories --> WorkoutMementoRepository
+MemoryWorkoutMementoRepository ..|> WorkoutMementoRepository
+SQLiteWorkoutMementoRepository ..|> WorkoutMementoRepository
+
+note right of Command
+  Os outros comandos concretos seguem
+  o mesmo protocolo. ADR 0009.
+end note
+note bottom of WorkoutMemento
+  No máximo um por treino.
+  PUT substitui, desfazer consome,
+  exclusão remove. ADRs 0010 e 0011.
+end note
+@enduml

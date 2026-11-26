@@ -1,4 +1,4 @@
-"""Composition of repositories and coordinated workout/event writes."""
+"""Composition of repositories and coordinated workout, event, and memento writes."""
 
 from __future__ import annotations
 
@@ -24,8 +24,11 @@ from app.users.repository import (
     UserRepository,
 )
 from app.workouts.repository import (
+    MemoryWorkoutMementoRepository,
     MemoryWorkoutRepository,
+    SQLiteWorkoutMementoRepository,
     SQLiteWorkoutRepository,
+    WorkoutMementoRepository,
     WorkoutRepository,
 )
 
@@ -35,9 +38,13 @@ class MemoryUnitOfWork:
         self,
         workouts: MemoryWorkoutRepository,
         accesses: MemoryAccessEventRepository,
+        mementos: MemoryWorkoutMementoRepository,
         lock: RLock,
     ) -> None:
-        self._workouts, self._accesses, self._lock = workouts, accesses, lock
+        self._workouts = workouts
+        self._accesses = accesses
+        self._mementos = mementos
+        self._lock = lock
 
     @contextmanager
     def transaction(self) -> Iterator[TransactionRepositories]:
@@ -45,8 +52,11 @@ class MemoryUnitOfWork:
             self._lock,
             self._workouts.transaction(),
             self._accesses.transaction(),
+            self._mementos.transaction(),
         ):
-            yield TransactionRepositories(self._workouts, self._accesses)
+            yield TransactionRepositories(
+                self._workouts, self._accesses, self._mementos
+            )
 
 
 class SQLiteUnitOfWork:
@@ -57,14 +67,18 @@ class SQLiteUnitOfWork:
     def transaction(self) -> Iterator[TransactionRepositories]:
         try:
             with sqlite_connection(self._path) as connection:
-                # Begin before reads so a transaction sees a consistent workout.
-                connection.execute("BEGIN")
+                # Acquire write lock upfront so read-modify-write transactions serialize.
+                connection.execute("BEGIN IMMEDIATE")
                 yield TransactionRepositories(
                     SQLiteWorkoutRepository(self._path, connection),
                     SQLiteAccessEventRepository(self._path, connection),
+                    SQLiteWorkoutMementoRepository(self._path, connection),
                 )
         except sqlite3.Error as error:
-            raise PersistenceError("Não foi possível concluir a transação") from error
+            raise PersistenceError(
+                "Não foi possível concluir a transação",
+                public_message=PersistenceError.WORKOUT_MESSAGE,
+            ) from error
 
 
 @dataclass(frozen=True)
@@ -72,6 +86,7 @@ class Repositories:
     users: UserRepository
     workouts: WorkoutRepository
     accesses: AccessEventRepository
+    mementos: WorkoutMementoRepository
     unit_of_work: UnitOfWork
 
 
@@ -84,11 +99,13 @@ class MemoryRepositoryFactory:
         lock = RLock()
         workouts = MemoryWorkoutRepository(lock)
         accesses = MemoryAccessEventRepository(lock)
+        mementos = MemoryWorkoutMementoRepository(lock)
         return Repositories(
             MemoryUserRepository(),
             workouts,
             accesses,
-            MemoryUnitOfWork(workouts, accesses, lock),
+            mementos,
+            MemoryUnitOfWork(workouts, accesses, mementos, lock),
         )
 
 
@@ -100,7 +117,10 @@ class SQLiteRepositoryFactory:
         users = SQLiteUserRepository(self._path)
         workouts = SQLiteWorkoutRepository(self._path)
         accesses = SQLiteAccessEventRepository(self._path)
-        return Repositories(users, workouts, accesses, SQLiteUnitOfWork(self._path))
+        mementos = SQLiteWorkoutMementoRepository(self._path)
+        return Repositories(
+            users, workouts, accesses, mementos, SQLiteUnitOfWork(self._path)
+        )
 
 
 def repository_factory(storage: str, path: Path) -> RepositoryFactory:

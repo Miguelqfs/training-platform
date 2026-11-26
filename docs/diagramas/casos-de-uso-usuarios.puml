@@ -7,7 +7,7 @@ actor Aluno
 actor Administrador
 actor "Treinador IA\n(componente futuro)" as IA
 
-rectangle "Training Platform — Sprint 3" {
+rectangle "Training Platform — implementado" {
   usecase "UC01\nCadastrar usuário" as UC01
   usecase "UC02\nListar usuários" as UC02
   usecase "UC03\nCadastrar treino" as UC03
@@ -16,6 +16,7 @@ rectangle "Training Platform — Sprint 3" {
   usecase "UC06\nListar treinos" as UC06
   usecase "UC07\nExcluir treino" as UC07
   usecase "UC08\nContar entidades" as UC08
+  usecase "UC10\nDesfazer atualização\nde treino" as UC10
 }
 rectangle "Sprint 4 — relatório de acessos" #F8F8F8 {
   usecase "UC09\nGerar relatório\nde acessos" as UC09
@@ -33,17 +34,24 @@ Aluno --> UC04
 Aluno --> UC05
 Aluno --> UC06
 Aluno --> UC07
+Aluno --> UC10
 Aluno ..> FutureApp
 Aluno ..> FutureIA
 IA ..> FutureIA
-note bottom of UC03
-  UC03, UC04, UC05, UC07: após implementação
-  Sprint 4, operação bem-sucedida gera
+UC10 ..> UC04 : exige atualização\nanterior bem-sucedida
+note bottom of UC04
+  UC03, UC04, UC05, UC07 e UC10: sucesso gera
   evento para o dono do treino (RF19).
+  UC04 guarda o estado anterior.
   UC06 e UC09 não geram eventos.
 end note
+note bottom of UC10
+  HTTP: POST /workouts/{id}/undo
+  Restaura a última atualização uma vez.
+  Ver UC10.
+end note
 note bottom of UC09
-  HTTP previsto: GET /statistics/accesses
-  (formato html ou pdf). Ver UC09.
+  HTTP: GET /statistics/accesses
+  (formato html ou pdf). Inclui undo.
 end note
 @enduml

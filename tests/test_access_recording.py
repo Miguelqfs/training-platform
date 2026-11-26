@@ -12,14 +12,16 @@ from app.accesses.domain import AccessEvent
 from app.accesses.ports import AccessLogPort
 from app.main import create_app
 from app.users.domain import NewUser, PersistenceError, UserRole
-from app.workouts.domain import WorkoutRegistration
+from app.workouts.domain import WorkoutMemento, WorkoutRegistration
 
 NOW = datetime(2026, 11, 11, 12, tzinfo=UTC)
 SECRET = "SenhaPrivada12"
 EMAIL = "privado@example.com"
 HASH = "hash-privado"
 WORKOUT = {"user_id": 2, "name": SECRET, "description": EMAIL}
-OPERATIONS = ("create", "get", "update", "delete")
+OPERATIONS = ("create", "get", "update", "undo", "delete")
+MEMENTO = WorkoutMemento("Anterior", "Descrição anterior")
+SUCCESS_STATUS = {"create": 201, "get": 200, "update": 200, "undo": 200, "delete": 204}
 
 
 @pytest.fixture
@@ -62,6 +64,12 @@ def seed_workout(client):
     return repositories(client).workouts.add(WorkoutRegistration(**WORKOUT))
 
 
+def seed_for_operation(client, operation):
+    workout = seed_workout(client)
+    if operation in ("update", "undo", "delete"):
+        repositories(client).mementos.save(workout.id, MEMENTO)
+
+
 def perform(client, operation):
     if operation == "create":
         return client.post("/workouts/", json=WORKOUT)
@@ -69,13 +77,15 @@ def perform(client, operation):
         return client.get("/workouts/1")
     if operation == "update":
         return client.put("/workouts/1", json={"name": "Novo"})
+    if operation == "undo":
+        return client.post("/workouts/1/undo")
     return client.delete("/workouts/1")
 
 
 def test_success_records_owner_and_utc_once_per_operation(client, access_log, clock):
-    operations = ("create", "get", "get", "update", "delete")
-    for operation, status in zip(operations, (201, 200, 200, 200, 204), strict=True):
-        assert perform(client, operation).status_code == status
+    operations = ("create", "get", "get", "update", "undo", "delete")
+    for operation in operations:
+        assert perform(client, operation).status_code == SUCCESS_STATUS[operation]
     expected = [AccessEvent(2, operation, NOW) for operation in operations]
     assert events(client) == expected
     assert access_log.record.call_args_list == [call(event) for event in expected]
@@ -118,11 +128,12 @@ def test_ineligible_requests_record_nothing(
 def test_failures_roll_back_workout_and_event_before_logging(
     client, access_log, monkeypatch, operation, stage
 ):
-    seed_workout(client)
+    seed_for_operation(client, operation)
     # Preservar também eventos anteriores, inclusive quando a falha ocorre após escrita.
     repositories(client).accesses.add(AccessEvent(2, "create", NOW))
     repos = repositories(client)
     before_workouts, before_events = repos.workouts.list_workouts(), events(client)
+    before_memento = repos.mementos.get(1)
 
     with monkeypatch.context() as patch:
         if stage == "commit":
@@ -144,6 +155,7 @@ def test_failures_roll_back_workout_and_event_before_logging(
                     "create": "add",
                     "get": "get_by_id",
                     "update": "update",
+                    "undo": "update",
                     "delete": "delete",
                 }[operation]
                 if stage == "workout"
@@ -161,12 +173,10 @@ def test_failures_roll_back_workout_and_event_before_logging(
     assert response.status_code == 503
     assert response.json() == {"detail": PersistenceError.WORKOUT_MESSAGE}
     assert repos.workouts.list_workouts() == before_workouts
+    assert repos.mementos.get(1) == before_memento
     assert events(client) == before_events
     access_log.record.assert_not_called()
-    assert (
-        perform(client, operation).status_code
-        == {"create": 201, "get": 200, "update": 200, "delete": 204}[operation]
-    )
+    assert perform(client, operation).status_code == SUCCESS_STATUS[operation]
     assert events(client) == before_events + [AccessEvent(2, operation, NOW)]
     access_log.record.assert_called_once_with(AccessEvent(2, operation, NOW))
     if operation == "create":
@@ -179,8 +189,9 @@ def test_failures_roll_back_workout_and_event_before_logging(
 def test_sqlite_driver_and_commit_failures_are_atomic(
     client, tmp_path, access_log, operation, failure
 ):
-    seed_workout(client)
+    seed_for_operation(client, operation)
     before = repositories(client).workouts.list_workouts()
+    before_memento = repositories(client).mementos.get(1)
     with sqlite3.connect(tmp_path / "accesses.db") as db:
         if failure == "deferred":
             db.execute(
@@ -196,6 +207,7 @@ def test_sqlite_driver_and_commit_failures_are_atomic(
     assert response.status_code == 503
     assert response.json() == {"detail": PersistenceError.WORKOUT_MESSAGE}
     assert repositories(client).workouts.list_workouts() == before
+    assert repositories(client).mementos.get(1) == before_memento
     assert events(client) == []
     access_log.record.assert_not_called()
     with sqlite3.connect(tmp_path / "accesses.db") as db:
@@ -208,7 +220,7 @@ def test_sqlite_driver_and_commit_failures_are_atomic(
 def test_auxiliary_log_failure_preserves_success_and_committed_event(
     client, access_log, operation, caplog
 ):
-    seed_workout(client)
+    seed_for_operation(client, operation)
     observed_events = []
 
     def fail_after_commit(event):
@@ -217,10 +229,7 @@ def test_auxiliary_log_failure_preserves_success_and_committed_event(
 
     access_log.record.side_effect = fail_after_commit
     response = perform(client, operation)
-    assert (
-        response.status_code
-        == {"create": 201, "get": 200, "update": 200, "delete": 204}[operation]
-    )
+    assert response.status_code == SUCCESS_STATUS[operation]
     assert events(client) == [AccessEvent(2, operation, NOW)]
     assert observed_events == [[AccessEvent(2, operation, NOW)]]
     access_log.record.assert_called_once_with(AccessEvent(2, operation, NOW))

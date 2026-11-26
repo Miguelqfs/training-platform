@@ -10,6 +10,7 @@ from app.workouts.domain import (
     InvalidWorkoutError,
     UserNotFoundError,
     WorkoutNotFoundError,
+    WorkoutUndoUnavailableError,
 )
 
 
@@ -52,6 +53,12 @@ async def entity_not_found(
     )
 
 
+async def workout_undo_unavailable(
+    request: Request, error: WorkoutUndoUnavailableError
+) -> JSONResponse:
+    return JSONResponse(status_code=HTTPStatus.CONFLICT, content={"detail": str(error)})
+
+
 async def report_failure(
     request: Request, error: ReportGenerationError
 ) -> JSONResponse:
@@ -68,5 +75,6 @@ def register_error_handlers(app: FastAPI) -> None:
     app.add_exception_handler(InvalidWorkoutError, invalid_domain_fields)
     app.add_exception_handler(UserNotFoundError, entity_not_found)
     app.add_exception_handler(WorkoutNotFoundError, entity_not_found)
+    app.add_exception_handler(WorkoutUndoUnavailableError, workout_undo_unavailable)
     app.add_exception_handler(InvalidReportError, invalid_domain_fields)
     app.add_exception_handler(ReportGenerationError, report_failure)

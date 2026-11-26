@@ -61,7 +61,7 @@ Elicitação é a coleta sistemática de necessidades e regras com pessoas e fon
 - Há armazenamento em RAM e SQLite, selecionado no início da execução → RF05 e NF-MAN-01.
 - Senha não é retornada em respostas e é armazenada como hash → NF-SEG-01.
 - Falhas SQLite durante requisições são traduzidas em HTTP 503 → NF-CON-01.
-- Autenticação, autorização, treinos e agente de IA ainda não estão implementados; são limites da versão atual.
+- Em 14/10/2026, autenticação, autorização, treinos e agente de IA ainda não estavam implementados. Treinos foram acrescentados na Sprint 3; os demais permanecem futuros ou ausentes.
 
 ## 4. Síntese e rastreabilidade
 

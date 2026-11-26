@@ -1,24 +1,27 @@
-from dataclasses import dataclass
 from threading import Lock
-from typing import TYPE_CHECKING, ClassVar, Self
+from typing import ClassVar, Self, TypeVar
 
+from app.commands import (
+    Command,
+    CountEntitiesCommand,
+    CreateWorkoutCommand,
+    DeleteWorkoutCommand,
+    GenerateAccessReportCommand,
+    GetWorkoutCommand,
+    ListUsersCommand,
+    ListWorkoutsCommand,
+    RegisterUserCommand,
+    UndoWorkoutCommand,
+    UpdateWorkoutCommand,
+)
+from app.context import ApplicationContext
 from app.reports.domain import AccessReportRequest, GeneratedReport
-from app.reports.service import AccessReportService
 from app.users.domain import User, UserRegistration
-from app.users.service import UserService
 from app.workouts.domain import Workout, WorkoutRegistration, WorkoutUpdate
-from app.workouts.service import WorkoutService
 
-if TYPE_CHECKING:
-    from app.repositories import Repositories
+__all__ = ["ApplicationContext", "FacadeSingletonController"]
 
-
-@dataclass(frozen=True)
-class ApplicationContext:
-    users: UserService
-    workouts: WorkoutService
-    reports: AccessReportService
-    repositories: "Repositories | None" = None
+Result = TypeVar("Result")
 
 
 class FacadeSingletonController:
@@ -36,37 +39,43 @@ class FacadeSingletonController:
     def get_instance(cls) -> Self:
         return cls()
 
+    def execute(self, context: ApplicationContext, command: Command[Result]) -> Result:
+        return command.execute(context)
+
     def register_user(
         self, context: ApplicationContext, registration: UserRegistration
     ) -> User:
-        return context.users.add_user(registration)
+        return self.execute(context, RegisterUserCommand(registration))
 
     def list_users(self, context: ApplicationContext) -> list[User]:
-        return context.users.list_users()
+        return self.execute(context, ListUsersCommand())
 
     def create_workout(
         self, context: ApplicationContext, registration: WorkoutRegistration
     ) -> Workout:
-        return context.workouts.create_workout(registration)
+        return self.execute(context, CreateWorkoutCommand(registration))
 
     def get_workout(self, context: ApplicationContext, workout_id: int) -> Workout:
-        return context.workouts.get_workout(workout_id)
+        return self.execute(context, GetWorkoutCommand(workout_id))
 
     def list_workouts(self, context: ApplicationContext) -> list[Workout]:
-        return context.workouts.list_workouts()
+        return self.execute(context, ListWorkoutsCommand())
 
     def update_workout(
         self, context: ApplicationContext, workout_id: int, update: WorkoutUpdate
     ) -> Workout:
-        return context.workouts.update_workout(workout_id, update)
+        return self.execute(context, UpdateWorkoutCommand(workout_id, update))
 
     def delete_workout(self, context: ApplicationContext, workout_id: int) -> None:
-        context.workouts.delete_workout(workout_id)
+        self.execute(context, DeleteWorkoutCommand(workout_id))
+
+    def undo_workout(self, context: ApplicationContext, workout_id: int) -> Workout:
+        return self.execute(context, UndoWorkoutCommand(workout_id))
 
     def count_entities(self, context: ApplicationContext) -> int:
-        return context.users.count_users() + context.workouts.count_workouts()
+        return self.execute(context, CountEntitiesCommand())
 
     def generate_access_report(
         self, context: ApplicationContext, request: AccessReportRequest
     ) -> GeneratedReport:
-        return context.reports.generate(request)
+        return self.execute(context, GenerateAccessReportCommand(request))

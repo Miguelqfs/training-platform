@@ -1,6 +1,11 @@
 from typing import Protocol
 
-from app.workouts.domain import Workout, WorkoutRegistration, WorkoutUpdate
+from app.workouts.domain import (
+    Workout,
+    WorkoutMemento,
+    WorkoutRegistration,
+    WorkoutUpdate,
+)
 
 
 class WorkoutRepository(Protocol):
@@ -10,3 +15,10 @@ class WorkoutRepository(Protocol):
     def update(self, workout_id: int, data: WorkoutUpdate) -> Workout | None: ...
     def delete(self, workout_id: int) -> bool: ...
     def count(self) -> int: ...
+
+
+class WorkoutMementoRepository(Protocol):
+    def save(self, workout_id: int, memento: WorkoutMemento) -> None: ...
+    def get(self, workout_id: int) -> WorkoutMemento | None: ...
+    def consume(self, workout_id: int) -> WorkoutMemento | None: ...
+    def delete(self, workout_id: int) -> bool: ...

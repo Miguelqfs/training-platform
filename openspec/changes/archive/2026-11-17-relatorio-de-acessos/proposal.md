@@ -1,6 +1,6 @@
 # Proposta: relatório de acessos
 
-**Estado: proposta para revisão; nenhuma funcionalidade desta change está implementada.**
+**Estado: implementada na release v0.3.0 e arquivada em 17/11/2026.** As seções seguintes preservam a proposta original como histórico.
 
 ## Why
 

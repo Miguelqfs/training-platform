@@ -22,4 +22,6 @@ Os [RNFs](../../openspec/specs/rnf/) cobrem indisponibilidade, atomicidade,
 durabilidade, segurança das respostas e contratos substituíveis. Consulte os
 [casos de uso](../04-casos-de-uso/README.md) para os fluxos.
 
-Não há autenticação, autorização, exercícios, execução ou histórico nesta sprint.
+A Sprint 5 acrescenta [desfazer a última atualização](../../openspec/specs/desfazer-atualizacao/spec.md) (RF24–RF27). O [relatório de acessos](../../openspec/specs/relatorio-de-acessos/spec.md) em vigor conta a operação `undo`.
+
+Não há autenticação, autorização, exercícios, execução ou histórico de sessões nesta versão.
