@@ -4,7 +4,7 @@
 **Ator principal previsto:** Aluno; Administrador também pode operar o protótipo.
 **Gatilho:** `PUT /workouts/{id}`.
 **Pré-condições de sucesso:** API iniciada e treino existente.
-**Requisitos:** RF09, RF12, RF15, RF16; Sprint 4: RF19, RF20, RF23.
+**Requisitos:** RF09, RF12, RF15, RF16; Sprint 4: RF19, RF20, RF23; Sprint 5: RF25, RF26.
 NF-SEG-03, NF-CON-04–06, NF-MAN-02, NF-USA-02.
 **Registro de evento:** [Luigi — guia Sprint 4](../sprint4/luigi-registro-acessos.md).
 **Interface proposta:** [TL03](../06-interface/TL03-atualizar-treino.md).
@@ -15,8 +15,8 @@ NF-SEG-03, NF-CON-04–06, NF-MAN-02, NF-USA-02.
 2. Envia nome obrigatório e descrição opcional ao endereço do treino.
 3. A fronteira valida ID positivo na URL e corpo; a fachada delega ao serviço.
 4. O serviço normaliza os textos e valida os mesmos limites do cadastro.
-5. Em transação compartilhada, o repositório atualiza o treino e registra evento `update`.
-6. A API retorna 200 com o treino atualizado; ID, vínculo e total permanecem.
+5. Em transação compartilhada, o serviço guarda o Memento do estado atual, substitui nome e descrição e registra evento `update`. Um `PUT` válido faz isso mesmo quando os textos repetem os atuais.
+6. A API retorna 200 com o treino atualizado; ID, vínculo e total permanecem. O estado anterior fica disponível para [UC10](UC10-desfazer-atualizacao.md).
 
 ## Alternativas e exceções
 
@@ -24,14 +24,17 @@ NF-SEG-03, NF-CON-04–06, NF-MAN-02, NF-USA-02.
   os campos; não é uma atualização parcial.
 - **A2 — corpo inválido (3–4):** 422. Nome ausente, vazio, nulo ou grande,
   descrição nula/grande, campo desconhecido ou presença de `id`/`user_id`
-  são recusados, mesmo repetindo valores existentes. Registro anterior intacto.
+  são recusados, mesmo repetindo valores existentes. Treino, Memento e eventos
+  permanecem como antes.
 - **A3 — ID não inteiro positivo (3):** 422; não é ausência de registro.
 - **A4 — treino ausente/excluído (5):** 404 `Treino não encontrado`; não recria.
 - **E1 — persistência (5):** 503 `Armazenamento de treinos indisponível`;
-  todos os campos e demais registros permanecem como antes.
+  treino, Memento e eventos permanecem como antes.
 
-**Pós-condição de sucesso (Sprint 4):** campos substituídos e evento `update`
-para o proprietário. **Garantia em falha:** treino e eventos intactos; 503 se a transação falhar.
+**Pós-condição de sucesso:** campos substituídos, um Memento com o estado
+anterior a esta atualização (no lugar de um Memento mais antigo, se existia) e
+evento `update` para o proprietário. **Garantia em falha:** treino, Memento e
+eventos intactos.
 
 **Exemplo:** `PUT /workouts/1` com `{"name":" Costas ","description":" remada "}`
 retorna `{"id":1,"user_id":1,"name":"Costas","description":"remada"}`.

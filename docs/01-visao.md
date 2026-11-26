@@ -36,7 +36,7 @@ Esses problemas foram relatados pelo idealizador e por uma pessoa entrevistada p
 
 ### 2.3 Visão geral e escopo
 
-O produto planejado deverá permitir que alunos acompanhem seus treinos em um lugar e recebam auxílio de um agente de IA para adaptar a rotina conforme dias disponíveis para treinar e limitações físicas informadas pelo aluno. A entrevista também apontou interesse em conversar sobre o treino e entender as adaptações; o comportamento exato do agente será detalhado em sprints futuras. Administradores operarão a plataforma e, segundo a intenção atual do grupo, realizarão o cadastro e a listagem de usuários. O cadastro e a listagem são o núcleo implementado nas Sprints 1 e 2, mas a API ainda não controla quem pode executá-los. A Sprint 3 acrescenta planos de treino vinculados a usuários, com cadastro, consulta, listagem, atualização, exclusão e contagem de usuários + treinos. Nome, descrição, limites e interpretação da contagem são decisões do projeto registradas no ADR 0005, não resultados da entrevista. Aplicativo mobile, exercícios, execução, histórico e agente de IA permanecem futuros.
+O produto planejado deverá permitir que alunos acompanhem seus treinos em um lugar e recebam auxílio de um agente de IA para adaptar a rotina conforme dias disponíveis para treinar e limitações físicas informadas pelo aluno. A entrevista também apontou interesse em conversar sobre o treino e entender as adaptações; o comportamento exato do agente será detalhado em sprints futuras. Administradores operarão a plataforma e, segundo a intenção atual do grupo, realizarão o cadastro e a listagem de usuários. O cadastro e a listagem são o núcleo implementado nas Sprints 1 e 2, mas a API ainda não controla quem pode executá-los. A Sprint 3 acrescenta planos de treino vinculados a usuários, com cadastro, consulta, listagem, atualização, exclusão e contagem de usuários + treinos. Nome, descrição, limites e interpretação da contagem são decisões do projeto registradas no ADR 0005, não resultados da entrevista. A Sprint 4 registra o uso bem-sucedido dos treinos e publica relatório de acessos em HTML e PDF. A Sprint 5 restaura a última atualização de um treino: a fachada usa Command e o estado anterior fica em um Memento no mesmo armazenamento. Aplicativo mobile, exercícios, execução, histórico de sessões e agente de IA permanecem futuros.
 
 **Fora do escopo inicial:** coleta de dados pessoais sem relação com o treino e funcionalidades de exercícios, execução de treinos ou IA nesta versão da API. Nenhuma outra integração externa foi definida para o ciclo inicial; novas integrações serão decididas nas próximas sprints.
 
@@ -44,7 +44,7 @@ O produto planejado deverá permitir que alunos acompanhem seus treinos em um lu
 
 | Papel | Necessidade | Situação atual |
 | --- | --- | --- |
-| Aluno | Consultar e acompanhar seus treinos; futuramente interagir com o treinador IA. | Pode ser cadastrado com papel `student`; planos vinculados ao seu ID podem ser cadastrados e gerenciados na API; execução e histórico são futuros. |
+| Aluno | Consultar e acompanhar seus treinos; futuramente interagir com o treinador IA. | Pode ser cadastrado com papel `student`; planos vinculados ao seu ID podem ser cadastrados, atualizados e desfeitos uma vez na API; execução e histórico de sessões são futuros. |
 | Administrador | Operar a plataforma e, na proposta atual, cadastrar e listar usuários. | Pode ser cadastrado com papel `admin`; autorização por papel ainda não foi implementada. |
 | Treinador IA | Auxiliar o trabalho com treinos. | Componente futuro do sistema, não é um tipo de usuário cadastrado. |
 
@@ -54,4 +54,4 @@ O produto planejado deverá permitir que alunos acompanhem seus treinos em um lu
 - O grupo planeja guardar futuramente apenas dados pertinentes ao treino, como altura, idade, peso e preferências de treino. O agente poderá considerar limitações físicas informadas pelo aluno; a necessidade de guardar essa informação ainda não foi definida. Esses campos ainda não existem no código.
 - A integração mais importante prevista é com o agente de IA. Seu comportamento e seus limites serão definidos nas próximas sprints.
 - A versão atual é um protótipo local sem autenticação nem autorização; o papel informado no cadastro não restringe as operações da API.
-- A persistência atual é escolhida na inicialização entre RAM e SQLite. O armazenamento em RAM não sobrevive ao reinício; SQLite sobrevive.
+- A persistência atual é escolhida na inicialização entre RAM e SQLite. O armazenamento em RAM não sobrevive ao reinício; SQLite sobrevive. O estado anterior usado para desfazer segue o mesmo meio.

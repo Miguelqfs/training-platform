@@ -4,7 +4,7 @@
 **Ator principal previsto:** Administrador; no protótipo qualquer cliente local pode chamar a API.
 **Gatilho:** `GET /statistics/accesses?start=&end=&format=`.
 **Pré-condições de sucesso:** API iniciada; parâmetros válidos.
-**Requisitos:** RF21, RF22, RF23 (falha de geração).
+**Requisitos:** RF21, RF22, RF23 (falha de geração), RF27 (`undo` nas contagens).
 **Implementação:** [Miguel — relatório e Template Method](../sprint4/miguel-relatorio.md), [ADR 0008](../adr/0008-relatorio-template-method.md).
 
 > A API não autentica clientes. O relatório agrega eventos pelo **proprietário do treino**
@@ -16,12 +16,12 @@
 2. A fronteira valida tipos e delega à fachada.
 3. O serviço de relatório normaliza o intervalo a UTC semiaberto `[start, end)`.
 4. O repositório de eventos lista ocorrências no período.
-5. O Template Method agrega total, contagens por usuário (ID crescente) e por operação.
+5. O Template Method agrega total, contagens por usuário (ID crescente) e por operação (`create`, `get`, `update`, `delete` e `undo`).
 6. O renderizador produz HTML ou PDF; a API retorna 200 com o tipo de conteúdo correspondente.
 
 ## Alternativas e exceções
 
-- **A1 — período sem eventos (5–6):** total zero, sem usuários listados, quatro operações com contagem zero.
+- **A1 — período sem eventos (5–6):** total zero, sem usuários listados, cinco operações com contagem zero, inclusive `undo`.
 - **A2 — parâmetros inválidos (1–2):** início não anterior ao fim, instante sem fuso ou formato diferente de `html`/`pdf` → 422.
 - **E1 — leitura ou renderização (3–6):** 503 com mensagem genérica, sem detalhes internos.
 

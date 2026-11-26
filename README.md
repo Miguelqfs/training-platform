@@ -1,6 +1,6 @@
 # Training Plataform
 
-Projeto da disciplina de Métodos de Projetos de Software. O produto pretende reunir o acompanhamento de treinos e, em etapas futuras, usar um agente de IA para ajudar o aluno a ajustar seus treinos. A Sprint 3 entrega CRUD de planos de treino vinculados a usuários, fachada única com Singleton/Facade e contagem de entidades, preservando cadastro de usuários e armazenamento em RAM ou SQLite. Os tipos de usuário são aluno (`student`) e administrador (`admin`). O treinador será um agente de IA em uma etapa futura.
+Projeto da disciplina de Métodos de Projetos de Software. O produto pretende reunir o acompanhamento de treinos e, em etapas futuras, usar um agente de IA para ajudar o aluno a ajustar seus treinos. A Sprint 3 entrega CRUD de planos de treino vinculados a usuários, fachada única com Singleton/Facade e contagem de entidades, preservando cadastro de usuários e armazenamento em RAM ou SQLite. A Sprint 4 acrescenta eventos de acesso e relatório HTML/PDF. A Sprint 5 desfaz a última atualização de um treino: a fachada encaminha cada operação por Command e o estado anterior fica em um Memento. A tag desta entrega é `v0.4.0`. Os tipos de usuário são aluno (`student`) e administrador (`admin`). O treinador será um agente de IA em uma etapa futura.
 
 ## Equipe
 
@@ -163,6 +163,38 @@ curl --get 'http://127.0.0.1:8000/statistics/accesses' \
 Para HTML, usar `format=html` e salvar com extensão `.html`. ReportLab gera PDF
 em memória, sem navegador ou conversor externo; as fontes são incorporadas.
 `pypdf` é dependência apenas de testes para conferir conteúdo e paginação.
+
+## Sprint 5
+
+A change arquivada [desfazer-atualizacao](openspec/changes/archive/2026-11-25-desfazer-atualizacao/proposal.md) restaura nome e descrição anteriores à última
+atualização bem-sucedida de um treino. Há no máximo um estado anterior por
+treino. Desfazer consome esse estado; um novo `PUT` bem-sucedido cria outra
+chance de desfazer. Não há refazer, nem desfazer de cadastro ou de exclusão.
+A fachada continua única por processo e sem dados: `undo_workout` cria
+`UndoWorkoutCommand` e chama `execute` com o contexto da requisição
+([ADR 0009](docs/adr/0009-fachada-command.md)). O Memento vive no mesmo
+armazenamento do treino ([ADR 0010](docs/adr/0010-persistencia-memento.md)).
+O contrato HTTP está no [ADR 0011](docs/adr/0011-contrato-desfazer-treino.md).
+
+| Operação | Endpoint | Sucesso | Erros |
+| --- | --- | --- | --- |
+| Desfazer última atualização | POST /workouts/{id}/undo | 200, treino restaurado | 409 sem histórico, 404 ausente, 422 ID, 503 |
+
+O corpo não é enviado. A resposta de sucesso tem os mesmos quatro campos de
+uma consulta: `id`, `user_id`, `name` e `description`. Identificador e
+proprietário não mudam. Treino recém-criado, ou já desfeito sem um `PUT`
+posterior, responde 409 com `Nenhuma atualização disponível para desfazer`.
+Excluir o treino apaga o Memento; desfazer esse ID responde 404.
+
+Um `PUT` válido grava o estado anterior mesmo quando os textos repetem os
+atuais. Um `PUT` inválido não mexe no Memento. Treino, Memento e evento `undo`
+entram na mesma transação. O relatório HTML/PDF passa a contar cinco operações,
+incluindo `undo` com zero quando não houve desfazer. RAM perde o estado
+anterior ao reiniciar; SQLite o mantém no arquivo configurado, inclusive em
+bancos criados antes desta sprint, que começam sem Memento.
+
+Detalhe do fluxo: [UC10](docs/04-casos-de-uso/UC10-desfazer-atualizacao.md).
+Participantes e diagrama: [projeto](docs/08-projeto.md).
 
 ### Verificar a documentação
 

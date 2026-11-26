@@ -6,10 +6,10 @@ Definir o registro de operações de treino associadas ao proprietário e a gera
 ## Requirements
 
 ### Requirement: RF19 — Registrar uso de treinos
-O sistema DEVE registrar um evento para cada criação, consulta individual, atualização ou exclusão de treino bem-sucedida, associado ao usuário proprietário do treino.
+O sistema DEVE registrar um evento para cada criação, consulta individual, atualização, exclusão ou desfazer atualização de treino bem-sucedida, associado ao usuário proprietário do treino.
 
 **Prioridade:** Essencial
-**Casos de uso:** UC03, UC04, UC05, UC07
+**Casos de uso:** UC03, UC04, UC05, UC07, UC10
 
 #### Scenario: Operações elegíveis
 - **GIVEN** um treino pertence ao usuário 7
@@ -25,6 +25,11 @@ O sistema DEVE registrar um evento para cada criação, consulta individual, atu
 - **GIVEN** um treino pertence ao usuário 7
 - **WHEN** o treino é excluído com sucesso
 - **THEN** o evento de exclusão permanece associado ao usuário 7
+
+#### Scenario: Desfazer atualização
+- **GIVEN** um treino de proprietário 7 tem uma atualização disponível para desfazer
+- **WHEN** desfazer é concluído
+- **THEN** exatamente um evento undo é associado ao proprietário 7, sem evento update adicional
 
 ### Requirement: RF20 — Preservar dados e persistência dos eventos
 O sistema DEVE registrar identificador do proprietário, operação e instante em UTC, sem senha, hash, e-mail ou corpo da requisição, no armazenamento configurado para a aplicação.
@@ -61,12 +66,17 @@ O sistema DEVE gerar relatório de eventos em um intervalo informado, incluindo 
 #### Scenario: Período sem eventos
 - **GIVEN** nenhum evento ocorreu no período solicitado
 - **WHEN** o relatório é gerado
-- **THEN** o total é zero, não há usuários listados e as quatro operações têm contagem zero
+- **THEN** o total é zero, não há usuários listados e as cinco operações têm contagem zero
 
 #### Scenario: Período inválido
 - **GIVEN** o início não é anterior ao fim ou um instante não possui fuso explícito
 - **WHEN** o relatório é solicitado
 - **THEN** a API rejeita a solicitação com 422
+
+#### Scenario: Contagem separada de desfazer
+- **GIVEN** um período contém eventos update e undo
+- **WHEN** o relatório do período é solicitado
+- **THEN** as contagens de atualização e de desfazer são apresentadas separadamente e incluídas no total
 
 ### Requirement: RF22 — Disponibilizar formatos de relatório
 O sistema DEVE disponibilizar o relatório em HTML e PDF com os mesmos dados agregados e identificação do período em UTC.
@@ -88,7 +98,7 @@ O sistema DEVE disponibilizar o relatório em HTML e PDF com os mesmos dados agr
 O sistema DEVE impedir sucesso de operação elegível quando o evento obrigatório não puder ser registrado e DEVE informar falhas de armazenamento ou geração de relatório sem expor detalhes internos.
 
 **Prioridade:** Essencial
-**Casos de uso:** UC03, UC04, UC05, UC07, UC09
+**Casos de uso:** UC03, UC04, UC05, UC07, UC09, UC10
 
 #### Scenario: Falha de registro em mutação
 - **GIVEN** a gravação do evento falha durante criação, atualização ou exclusão de treino
@@ -104,3 +114,8 @@ O sistema DEVE impedir sucesso de operação elegível quando o evento obrigató
 - **GIVEN** a leitura dos eventos ou a renderização falha
 - **WHEN** o relatório é solicitado
 - **THEN** a API responde 503 com mensagem genérica sem detalhes internos
+
+#### Scenario: Falha de registro ao desfazer
+- **GIVEN** a gravação do evento undo falha durante a restauração
+- **WHEN** desfazer é solicitado
+- **THEN** treino, estado anterior e eventos permanecem inalterados e a API responde 503

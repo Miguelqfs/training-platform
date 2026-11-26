@@ -3,9 +3,11 @@
 skinparam classAttributeIconSize 0
 skinparam packageStyle rectangle
 skinparam defaultFontSize 12
+skinparam nodesep 6
+skinparam ranksep 12
 hide empty members
 
-title Sprint 4 — classes de projeto implementadas
+title Sprint 5 — classes de projeto implementadas
 
 package "Fronteira e composição" {
   class "routers/users, workouts, statistics" as Routes <<boundary>>
@@ -18,13 +20,24 @@ package "Fronteira e composição" {
     +reports: AccessReportService
     +repositories: Repositories
   }
-  class FacadeSingletonController <<Singleton, Facade>> {
+  class FacadeSingletonController <<Singleton, Facade, Invoker>> {
     -{static} _instance
     -{static} _lock: Lock
     +{static} get_instance(): FacadeSingletonController
-    +count_entities(context): int
-    ..
-    operações de usuários, treinos e relatórios
+    +execute(context, command): Result
+    +undo_workout(context, workout_id): Workout
+  }
+  interface Command <<Protocol>> {
+    +execute(context): Result
+  }
+  class UndoWorkoutCommand <<ConcreteCommand>> {
+    +workout_id: int
+    +execute(context): Workout
+  }
+  class UpdateWorkoutCommand <<ConcreteCommand>> {
+    +workout_id: int
+    +update: WorkoutUpdate
+    +execute(context): Workout
   }
 }
 
@@ -42,7 +55,15 @@ package "Negócio — serviços" {
 
 package "Negócio — domínio" {
   class User <<frozen>>
-  class Workout <<frozen>>
+  class Workout <<frozen, Originator>> {
+    +create_memento(): WorkoutMemento
+    +restore(memento): Workout
+  }
+  class WorkoutMemento <<frozen, Memento>> {
+    +name: str
+    +description: str
+    +to_update(): WorkoutUpdate
+  }
   class AccessEvent <<frozen>> {
     +user_id: int
     +operation: Operation
@@ -55,6 +76,12 @@ package "Negócio — domínio" {
 package "Negócio — portas" {
   interface UserRepository <<Protocol>>
   interface WorkoutRepository <<Protocol>>
+  interface WorkoutMementoRepository <<Protocol, Caretaker>> {
+    +save(workout_id, memento)
+    +get(workout_id)
+    +consume(workout_id)
+    +delete(workout_id)
+  }
   interface AccessEventRepository <<Protocol>> {
     +add(event)
     +list_between(start, end)
@@ -63,7 +90,11 @@ package "Negócio — portas" {
     +transaction(): TransactionRepositories
   }
   interface AccessLogPort <<Protocol>>
-  class TransactionRepositories <<frozen>>
+  class TransactionRepositories <<frozen>> {
+    +workouts
+    +accesses
+    +mementos
+  }
 }
 
 package "Infraestrutura — persistência" {
@@ -71,6 +102,7 @@ package "Infraestrutura — persistência" {
     +users
     +workouts
     +accesses
+    +mementos
     +unit_of_work
   }
   interface RepositoryFactory <<Protocol>>
@@ -82,6 +114,8 @@ package "Infraestrutura — persistência" {
   class SQLiteUserRepository
   class MemoryWorkoutRepository
   class SQLiteWorkoutRepository
+  class MemoryWorkoutMementoRepository
+  class SQLiteWorkoutMementoRepository
   class MemoryAccessEventRepository
   class SQLiteAccessEventRepository
   class LoggingAccessLogAdapter <<Adapter>>
@@ -91,20 +125,22 @@ package "Infraestrutura — persistência" {
 
 App ..> RepositoryFactory : seleciona
 RepositoryFactory ..> Repositories : create()
-App ..> ApplicationContext : monta serviços + repositórios
+App ..> ApplicationContext : monta
 Routes --> FacadeSingletonController
-Routes ..> ApplicationContext : request.app.state.context
+Routes ..> ApplicationContext : contexto da requisição
 FacadeSingletonController ..> ApplicationContext : recebe, não guarda
+FacadeSingletonController --> Command : execute
+UndoWorkoutCommand ..|> Command
+UpdateWorkoutCommand ..|> Command
+UndoWorkoutCommand ..> WorkoutService : undo_workout
 ApplicationContext --> UserService
 ApplicationContext --> WorkoutService
 ApplicationContext --> AccessReportService
 ApplicationContext --> Repositories
-FacadeSingletonController ..> UserService
-FacadeSingletonController ..> WorkoutService
-FacadeSingletonController ..> AccessReportService
 UserService --> UserRepository
 WorkoutService --> WorkoutRepository
-WorkoutService ..> UnitOfWork : treino + evento
+WorkoutService ..> UnitOfWork : treino + memento + evento
+Workout --> WorkoutMemento : create_memento / restore
 AccessReportService --> AccessReportTemplate
 AccessReportTemplate --> AccessEventRepository
 HtmlAccessReport --|> AccessReportTemplate
@@ -115,24 +151,37 @@ MemoryUserRepository ..|> UserRepository
 SQLiteUserRepository ..|> UserRepository
 MemoryWorkoutRepository ..|> WorkoutRepository
 SQLiteWorkoutRepository ..|> WorkoutRepository
+MemoryWorkoutMementoRepository ..|> WorkoutMementoRepository
+SQLiteWorkoutMementoRepository ..|> WorkoutMementoRepository
 MemoryAccessEventRepository ..|> AccessEventRepository
 SQLiteAccessEventRepository ..|> AccessEventRepository
-Repositories --> UserRepository
-Repositories --> WorkoutRepository
-Repositories --> AccessEventRepository
 Repositories --> UnitOfWork
 MemoryUnitOfWork ..|> UnitOfWork
 SQLiteUnitOfWork ..|> UnitOfWork
 SQLiteUserRepository ..> Connection
 SQLiteWorkoutRepository ..> Connection
+SQLiteWorkoutMementoRepository ..> Connection
 SQLiteAccessEventRepository ..> Connection
 LoggingAccessLogAdapter ..|> AccessLogPort
 LoggingAccessLogAdapter --> Logger
 WorkoutService ..> AccessLogPort : após commit
 User "1" -- "0..*" Workout : user_id
-AccessEvent ..> User : proprietário (id)
+Workout "1" -- "0..1" WorkoutMemento
+AccessEvent ..> User : proprietário
+
+note bottom of Command
+  Demais comandos concretos: RegisterUser,
+  ListUsers, CreateWorkout, GetWorkout,
+  ListWorkouts, DeleteWorkout, CountEntities
+  e GenerateAccessReport. ADR 0009.
+end note
+note bottom of WorkoutMemento
+  Um estado anterior por treino.
+  PUT substitui; desfazer consome; exclusão remove.
+  ADRs 0010 e 0011.
+end note
 note bottom of RepositoryFactory
   Abstract Factory: família RAM ou SQLite
-  coerente + mesma UoW. ADR 0006.
+  coerente, com a mesma UoW. ADR 0006.
 end note
 @enduml

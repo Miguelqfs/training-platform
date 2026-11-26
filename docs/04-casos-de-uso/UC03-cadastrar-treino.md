@@ -31,8 +31,10 @@ NF-SEG-03, NF-CON-04–06, NF-MAN-02, NF-USA-02.
   `Armazenamento de treinos indisponível`, preservando causa internamente.
 
 **Pós-condição de sucesso (Sprint 4):** treino adicional e evento `create` consultável,
-sem modificar o usuário. **Garantia em falha:** treino e eventos anteriores
-preservados; falha na transação responde 503 (RF23).
+sem modificar o usuário e sem criar Memento. Desfazer esse treino responde 409
+até que um `PUT` bem-sucedido guarde estado anterior
+([UC10](UC10-desfazer-atualizacao.md)). **Garantia em falha:** treino e eventos
+anteriores preservados; falha na transação responde 503 (RF23).
 
 **Exemplo:** `{"user_id":1,"name":" Peito ","description":" supino "}`
 retorna `{"id":1,"user_id":1,"name":"Peito","description":"supino"}`.

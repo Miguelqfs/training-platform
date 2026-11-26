@@ -2,10 +2,10 @@
 
 ## Status
 
-Aceito na implementação de Luigi para a Sprint 5; sujeito à revisão do PR.
-Cobre as tarefas **3.1** e **3.2** da change
-[desfazer-atualizacao](../../openspec/changes/desfazer-atualizacao/tasks.md),
-exceto o comando de desfazer, que acompanha a implementação do Memento.
+Aceito. Cobre a fachada baseada em Command da Sprint 5, inclusive
+`UndoWorkoutCommand`. O contrato HTTP do desfazer está no
+[ADR 0011](0011-contrato-desfazer-treino.md). A change está em
+[desfazer-atualizacao](../../openspec/changes/archive/2026-11-25-desfazer-atualizacao/tasks.md).
 
 ## Contexto
 
@@ -13,7 +13,7 @@ O [checklist da Sprint 5](https://github.com/rkulesza/mps-modelo/blob/main/docs/
 pede uma fachada de negócio baseada em Command. Até a Sprint 4,
 `FacadeSingletonController` chamava diretamente os serviços do contexto
 ([ADR 0005](0005-treinos-fachada.md), [ADR 0008](0008-relatorio-template-method.md)).
-O [design da change](../../openspec/changes/desfazer-atualizacao/design.md) exige
+O [design da change](../../openspec/changes/archive/2026-11-25-desfazer-atualizacao/design.md) exige
 preservar as assinaturas da fachada, o Singleton sem dados e o contexto por
 aplicação, e encaminhar também o futuro desfazer por um comando.
 
@@ -25,7 +25,7 @@ Participantes do Command:
 | --- | --- |
 | Client | Rotas FastAPI e métodos públicos da fachada, que criam o comando com os argumentos da requisição. |
 | Command | Protocolo `Command[Result]` em `app/commands.py`, com `execute(context) -> Result`. |
-| ConcreteCommand | `RegisterUserCommand`, `ListUsersCommand`, `CreateWorkoutCommand`, `GetWorkoutCommand`, `ListWorkoutsCommand`, `UpdateWorkoutCommand`, `DeleteWorkoutCommand`, `CountEntitiesCommand` e `GenerateAccessReportCommand`. |
+| ConcreteCommand | `RegisterUserCommand`, `ListUsersCommand`, `CreateWorkoutCommand`, `GetWorkoutCommand`, `ListWorkoutsCommand`, `UpdateWorkoutCommand`, `UndoWorkoutCommand`, `DeleteWorkoutCommand`, `CountEntitiesCommand` e `GenerateAccessReportCommand`. |
 | Invoker | `FacadeSingletonController.execute(context, command)`. |
 | Receiver | `UserService`, `WorkoutService` e `AccessReportService` do `ApplicationContext` recebido. |
 
@@ -37,7 +37,7 @@ Comandos não validam regras, não acessam repositórios nem SQL; delegam ao
 serviço, que continua responsável por validação, unidade de trabalho e eventos.
 
 Os métodos públicos da fachada (`register_user`, `list_users`, `create_workout`,
-`get_workout`, `list_workouts`, `update_workout`, `delete_workout`,
+`get_workout`, `list_workouts`, `update_workout`, `undo_workout`, `delete_workout`,
 `count_entities` e `generate_access_report`) mantêm nomes, parâmetros e retornos.
 Cada um cria o comando correspondente e chama `execute`. As rotas não mudam, e
 os contratos HTTP, códigos de status, mensagens e OpenAPI permanecem idênticos.
@@ -48,10 +48,10 @@ fachada e comandos; `app.facade` o reexporta para compatibilidade de imports.
 O Singleton, a trava de construção e a ausência de atributos de instância seguem
 como no ADR 0005.
 
-O desfazer da change `desfazer-atualizacao` será um novo comando concreto,
-delegando ao serviço de treinos e exposto por um método próprio da fachada. A
-captura e restauração do estado anterior pertencem ao Memento e à unidade de
-trabalho, não ao comando, que não mantém histórico.
+`UndoWorkoutCommand` delega a `WorkoutService.undo_workout` e é exposto por
+`FacadeSingletonController.undo_workout`. A captura e a restauração do estado
+anterior pertencem ao Memento e à unidade de trabalho, não ao comando, que não
+mantém histórico.
 
 ## Alternativas consideradas
 
