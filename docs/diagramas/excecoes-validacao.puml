@@ -3,7 +3,7 @@
 skinparam classAttributeIconSize 0
 hide empty members
 
-title Sprint 3 — validação e tradução das exceções
+title Sprint 5 — validação e tradução das exceções
 
 package "Usuários" {
   class "users.credentials" as Credentials <<module>>
@@ -24,6 +24,7 @@ package "Treinos" {
   class InvalidWorkoutError <<exception>>
   class UserNotFoundError <<exception>>
   class WorkoutNotFoundError <<exception>>
+  class WorkoutUndoUnavailableError <<exception>>
 }
 package "Fronteira HTTP" {
   class "error_handlers" as Handlers <<module>>
@@ -44,12 +45,14 @@ SQLiteWorkoutRepository ..> UserNotFoundError : FK
 WorkoutService ..> InvalidWorkoutError
 WorkoutService ..> UserNotFoundError
 WorkoutService ..> WorkoutNotFoundError
+WorkoutService ..> WorkoutUndoUnavailableError : desfazer sem histórico
 WorkoutService ..> PersistenceError
 RequestValidationError ..> Handlers : 422 sem input/ctx
 InvalidCredentialsError ..> Handlers : 422
 InvalidWorkoutError ..> Handlers : 422
 UserNotFoundError ..> Handlers : 404
 WorkoutNotFoundError ..> Handlers : 404
+WorkoutUndoUnavailableError ..> Handlers : 409
 PersistenceError ..> Handlers : 503 com public_message
 DuplicateUserError ..> UserRoutes : 409
 

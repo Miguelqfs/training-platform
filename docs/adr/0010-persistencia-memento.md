@@ -2,14 +2,15 @@
 
 ## Status
 
-Aceito na implementação de Davi para a Sprint 5; sujeito à revisão do PR.
-Cobre as tarefas **2.1**, **2.2** e **2.3** da change
-[desfazer-atualizacao](../../openspec/changes/desfazer-atualizacao/tasks.md).
+Aceito. Cobre a persistência do Memento da Sprint 5. A operação de desfazer
+que consome esse estado está no [ADR 0011](0011-contrato-desfazer-treino.md).
+A change está em
+[desfazer-atualizacao](../../openspec/changes/archive/2026-11-25-desfazer-atualizacao/tasks.md).
 
 ## Contexto
 
-O [design da change](../../openspec/changes/desfazer-atualizacao/design.md) e os
-requisitos [RF24–RF26](../../openspec/changes/desfazer-atualizacao/specs/desfazer-atualizacao/spec.md)
+O [design da change](../../openspec/changes/archive/2026-11-25-desfazer-atualizacao/design.md) e os
+requisitos [RF24–RF26](../../openspec/specs/desfazer-atualizacao/spec.md)
 exigem guardar no máximo um estado anterior (`name` e `description`) por treino a
 cada atualização bem-sucedida, restaurá-lo uma única vez ao desfazer e tratar
 alteração do treino, Memento e evento de acesso como uma unidade atômica nos
@@ -18,9 +19,9 @@ perder dados nem fabricar histórico retroativo.
 
 Os [ADRs 0006](0006-repository-factory.md), [0007](0007-adapter-log-eventos.md)
 e [0009](0009-fachada-command.md) definem a seleção por fábrica, o isolamento por
-aplicação e o uso de Command na fachada. O serviço de treinos, o comando de
-desfazer, a rota HTTP e a operação `undo` nos relatórios permanecem para os PRs
-seguintes da sprint.
+aplicação e o uso de Command na fachada. O serviço, a rota e o evento `undo`
+foram integrados em seguida e estão registrados no
+[ADR 0011](0011-contrato-desfazer-treino.md).
 
 ## Decisão
 
@@ -149,6 +150,7 @@ with self._transaction() as tx:
   ciclo de vida em RAM e SQLite, bancos legados, exclusão em cascata, rollback
   de captura/substituição/consumo/remoção, falhas de commit/trava e
   serializabilidade concorrente.
-- Permanecem para os próximos PRs da Sprint 5: integração no `WorkoutService`,
-  comando e rota `POST /workouts/{id}/undo`, evento `undo` nos relatórios e
-  atualização final dos diagramas e arquivamento da change.
+- `WorkoutService` captura o Memento no `PUT`, consome na restauração e remove
+  na exclusão, na mesma transação do treino e do evento. A restauração grava os
+  campos restaurados sem chamar a operação pública de atualização. O contrato
+  HTTP e o evento `undo` estão no [ADR 0011](0011-contrato-desfazer-treino.md).

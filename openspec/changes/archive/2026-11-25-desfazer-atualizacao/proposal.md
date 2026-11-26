@@ -1,6 +1,6 @@
 # Proposta: desfazer atualização de treino
 
-**Estado: proposta para revisão; a funcionalidade ainda não foi implementada.**
+**Estado: implementada na Sprint 5.** Fachada em Command, Memento em RAM e SQLite, e `POST /workouts/{id}/undo` com evento `undo`. O contrato HTTP está no ADR 0011. Esta change é arquivada no fechamento, quando as specs em vigor passam a incluir RF24–RF27.
 
 ## Why
 
@@ -37,4 +37,4 @@ Na API atual, a atualização substitui o nome e a descrição do treino, sem of
 
 ## Impact
 
-Alterações futuras atingirão a fachada, o serviço de treinos, a unidade de trabalho, os modos de armazenamento RAM/SQLite, testes e documentação. Não há implementação nem alteração de contrato em vigor neste rascunho.
+A implementação atingiu a fachada, o serviço de treinos, a unidade de trabalho, os modos RAM e SQLite, os relatórios, os testes e a documentação. O arquivamento incorpora o contrato às specs em vigor.
